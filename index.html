@@ -1,12 +1,333 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta name="apple-itunes-app" content="app-clip-bundle-id=com.ClassDojo.Clip, app-clip-display=card">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anthony Rizk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #888;
+      --accent: #4f8ef7;
+      --accent-soft: #1e3a6e;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Hero ── */
+    header {
+      padding: 80px 0 60px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+    }
+
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .avatar-placeholder {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: var(--muted);
+    }
+
+    .hero-text h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .hero-text .subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .hero-text .location {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .links {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+
+    .btn:hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { background: #3a7ae8; border-color: #3a7ae8; }
+
+    /* ── Sections ── */
+    section {
+      padding: 48px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-child { border-bottom: none; }
+
+    section h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    /* ── About ── */
+    .about p {
+      font-size: 1rem;
+      color: #ccc;
+      line-height: 1.75;
+    }
+
+    /* ── Experience ── */
+    .exp-list { display: flex; flex-direction: column; gap: 28px; }
+
+    .exp-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+    }
+
+    .exp-item .company {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .exp-item .role {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .exp-item .period {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: right;
+      align-self: start;
+      padding-top: 2px;
+    }
+
+    .exp-item .desc {
+      font-size: 0.875rem;
+      color: #aaa;
+      margin-top: 6px;
+      grid-column: 1 / -1;
+      line-height: 1.65;
+    }
+
+    /* ── Skills ── */
+    .skills-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .skill-tag {
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.8rem;
+      color: #ccc;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 32px 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 560px) {
+      .hero { flex-direction: column; align-items: flex-start; gap: 20px; }
+      .hero-text h1 { font-size: 1.6rem; }
+      .exp-item { grid-template-columns: 1fr; }
+      .exp-item .period { text-align: left; }
+    }
+  </style>
 </head>
-
 <body>
-    <img src="p1.jpg" />
-</body>
+  <div class="container">
 
+    <!-- Hero -->
+    <header>
+      <div class="hero">
+        <div class="avatar-placeholder">AR</div>
+        <div class="hero-text">
+          <h1>Anthony Rizk</h1>
+          <div class="subtitle">Mobile Engineer · iOS</div>
+          <div class="location">Austin, TX</div>
+          <div class="links">
+            <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">
+              LinkedIn
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- About -->
+    <section class="about">
+      <h2>About</h2>
+      <p>
+        Mobile engineer with a focus on iOS, bringing experience across some of the biggest and smallest companies in tech.
+        I've shipped products used by millions — from Messenger at Facebook to analytics tools at Google and Tableau — and
+        I thrive building thoughtful, high-quality mobile experiences at every scale.
+      </p>
+    </section>
+
+    <!-- Experience -->
+    <section>
+      <h2>Experience</h2>
+      <div class="exp-list">
+
+        <div class="exp-item">
+          <div class="company">Gregarious, Inc.</div>
+          <div class="period">Aug 2021 – May 2023</div>
+          <div class="role">Staff Software Engineer, iOS</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Facebook</div>
+          <div class="period">Oct 2020 – Jul 2021</div>
+          <div class="role">Staff Software Engineer, Mobile — Messenger</div>
+          <div class="desc">
+            Led mobile engineering efforts on Messenger, building features for one of the world's
+            most-used communication platforms.
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Google</div>
+          <div class="period">Sep 2019 – Sep 2020</div>
+          <div class="role">Senior Software Engineer, Android</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Facebook</div>
+          <div class="period">Aug 2017 – Sep 2019</div>
+          <div class="role">Staff Software Engineer, iOS — Messenger</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Cape</div>
+          <div class="period">Oct 2016 – Jul 2017</div>
+          <div class="role">Mobile Tech Lead</div>
+          <div class="desc">
+            Led mobile development for a drone and computer vision startup, building iOS apps
+            for real-time aerial control and video streaming.
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Tableau Software</div>
+          <div class="period">Mar 2016 – Sep 2016</div>
+          <div class="role">Software Development Manager — Vizable</div>
+          <div class="desc">
+            Managed a team of developers building Vizable, Tableau's consumer-focused iOS
+            data visualization app.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section>
+      <h2>Skills</h2>
+      <div class="skills-grid">
+        <span class="skill-tag">iOS</span>
+        <span class="skill-tag">Swift</span>
+        <span class="skill-tag">Objective-C</span>
+        <span class="skill-tag">Android</span>
+        <span class="skill-tag">Mobile Architecture</span>
+        <span class="skill-tag">React Native</span>
+        <span class="skill-tag">Mobile Performance</span>
+        <span class="skill-tag">Live Service Games</span>
+        <span class="skill-tag">Computer Vision</span>
+        <span class="skill-tag">Team Leadership</span>
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section>
+      <h2>Education</h2>
+      <div class="exp-list">
+        <div class="exp-item">
+          <div class="company">University of Waterloo</div>
+          <div class="period">1995 – 2000</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      &copy; 2026 Anthony Rizk
+    </footer>
+
+  </div>
+</body>
 </html>
