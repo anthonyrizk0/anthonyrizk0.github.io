@@ -11,13 +11,14 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --border: #2a2a2a;
-      --text: #e8e8e8;
-      --muted: #888;
-      --accent: #4f8ef7;
-      --accent-soft: #1e3a6e;
+      --bg: #fafafa;
+      --surface: #f4f4f5;
+      --border: #e4e4e7;
+      --text: #111827;
+      --text-secondary: #374151;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
     }
 
     body {
@@ -125,7 +126,7 @@
     /* ── About ── */
     .about p {
       font-size: 1rem;
-      color: #ccc;
+      color: var(--text-secondary);
       line-height: 1.8;
     }
 
@@ -166,7 +167,7 @@
 
     .exp-item .desc {
       font-size: 0.875rem;
-      color: #aaa;
+      color: var(--text-secondary);
       margin-top: 8px;
       grid-column: 1 / -1;
       line-height: 1.7;
@@ -248,7 +249,7 @@
 
     .pub-item .pub-note {
       font-size: 0.875rem;
-      color: #aaa;
+      color: var(--text-secondary);
       margin-top: 6px;
       grid-column: 1 / -1;
     }
@@ -305,6 +306,19 @@
     <section>
       <h2>Experience</h2>
       <div class="exp-list">
+
+        <div class="exp-item">
+          <div class="company">ClassDojo</div>
+          <div class="period">May 2023 – Present</div>
+          <div class="role">Staff Software Engineer, iOS · Austin, TX (remote)</div>
+          <div class="desc">
+            <ul>
+              <li>Lead iOS engineer owning mobile architecture and engineering across student and classroom-facing products</li>
+              <li>Drove major feature development and releases across the ClassDojo app ecosystem</li>
+              <li>Worked closely with product, design, and cross-functional teams to define and ship high-quality mobile experiences</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="exp-item">
           <div class="company">Greg — Plant Identifier &amp; Care <span class="acq">(greg.app)</span></div>
@@ -433,12 +447,22 @@
           <div class="company">bitHeads</div>
           <div class="period">2007 &amp; 2008–2009</div>
           <div class="role">Mobile Software Developer · Ottawa, Canada</div>
+          <div class="desc">
+            <ul>
+              <li>Led various client mobile projects with a focus on BlackBerry — networking, UI, and hardware integration</li>
+            </ul>
+          </div>
         </div>
 
         <div class="exp-item">
           <div class="company">TrueContext</div>
           <div class="period">Sep 2006 – Sep 2007</div>
           <div class="role">BlackBerry Team Lead &amp; Project Manager (consultant) · Ottawa, Canada</div>
+          <div class="desc">
+            <ul>
+              <li>Led BlackBerry development team and owned project delivery as a consultant</li>
+            </ul>
+          </div>
         </div>
 
       </div>
