@@ -50,15 +50,6 @@
       gap: 36px;
     }
 
-    .avatar {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--border);
-      flex-shrink: 0;
-    }
-
     .avatar-placeholder {
       width: 96px;
       height: 96px;
@@ -93,7 +84,7 @@
 
     .links {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       margin-top: 20px;
       flex-wrap: wrap;
     }
@@ -110,7 +101,6 @@
       background: var(--surface);
       color: var(--text);
       transition: border-color 0.15s, background 0.15s;
-      cursor: pointer;
     }
 
     .btn:hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; }
@@ -122,8 +112,6 @@
       padding: 48px 0;
       border-bottom: 1px solid var(--border);
     }
-
-    section:last-child { border-bottom: none; }
 
     section h2 {
       font-size: 0.75rem;
@@ -138,16 +126,16 @@
     .about p {
       font-size: 1rem;
       color: #ccc;
-      line-height: 1.75;
+      line-height: 1.8;
     }
 
     /* ── Experience ── */
-    .exp-list { display: flex; flex-direction: column; gap: 28px; }
+    .exp-list { display: flex; flex-direction: column; gap: 32px; }
 
     .exp-item {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 4px 16px;
+      gap: 2px 16px;
     }
 
     .exp-item .company {
@@ -155,10 +143,16 @@
       font-size: 0.95rem;
     }
 
-    .exp-item .role {
-      font-size: 0.9rem;
+    .exp-item .acq {
+      font-size: 0.8rem;
+      font-weight: 400;
       color: var(--muted);
-      margin-top: 2px;
+    }
+
+    .exp-item .role {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 3px;
     }
 
     .exp-item .period {
@@ -167,15 +161,47 @@
       white-space: nowrap;
       text-align: right;
       align-self: start;
-      padding-top: 2px;
+      padding-top: 3px;
     }
 
     .exp-item .desc {
       font-size: 0.875rem;
       color: #aaa;
-      margin-top: 6px;
+      margin-top: 8px;
       grid-column: 1 / -1;
-      line-height: 1.65;
+      line-height: 1.7;
+    }
+
+    .exp-item .desc ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .exp-item .desc ul li::before {
+      content: "–";
+      margin-right: 8px;
+      color: var(--muted);
+    }
+
+    .exp-item .tech {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 8px;
+      grid-column: 1 / -1;
+    }
+
+    .section-divider {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 28px;
+      margin-top: 4px;
+      grid-column: 1 / -1;
     }
 
     /* ── Skills ── */
@@ -194,6 +220,39 @@
       color: #ccc;
     }
 
+    /* ── Publication ── */
+    .pub-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+    }
+
+    .pub-item .title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .pub-item .publisher {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .pub-item .pub-year {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: right;
+      align-self: start;
+      padding-top: 3px;
+    }
+
+    .pub-item .pub-note {
+      font-size: 0.875rem;
+      color: #aaa;
+      margin-top: 6px;
+      grid-column: 1 / -1;
+    }
+
     /* ── Footer ── */
     footer {
       padding: 32px 0;
@@ -207,6 +266,8 @@
       .hero-text h1 { font-size: 1.6rem; }
       .exp-item { grid-template-columns: 1fr; }
       .exp-item .period { text-align: left; }
+      .pub-item { grid-template-columns: 1fr; }
+      .pub-item .pub-year { text-align: left; }
     }
   </style>
 </head>
@@ -222,9 +283,8 @@
           <div class="subtitle">Mobile Engineer · iOS</div>
           <div class="location">Austin, TX</div>
           <div class="links">
-            <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">
-              LinkedIn
-            </a>
+            <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">LinkedIn</a>
+            <a class="btn" href="mailto:anthony.rizk@gmail.com">Email</a>
           </div>
         </div>
       </div>
@@ -234,9 +294,10 @@
     <section class="about">
       <h2>About</h2>
       <p>
-        Mobile engineer with a focus on iOS, bringing experience across some of the biggest and smallest companies in tech.
-        I've shipped products used by millions — from Messenger at Facebook to analytics tools at Google and Tableau — and
-        I thrive building thoughtful, high-quality mobile experiences at every scale.
+        Mobile engineer with 20+ years of experience, focused primarily on iOS. I've built products used by millions —
+        from leading Messenger's LightSpeed rewrite at Facebook to shipping a plant-care app loved by gardeners everywhere.
+        I've founded and grown companies, managed large teams, held staff-level IC roles at big tech, and everything in between.
+        Published author of the all-time best-selling BlackBerry development book.
       </p>
     </section>
 
@@ -246,51 +307,138 @@
       <div class="exp-list">
 
         <div class="exp-item">
-          <div class="company">Gregarious, Inc.</div>
-          <div class="period">Aug 2021 – May 2023</div>
-          <div class="role">Staff Software Engineer, iOS</div>
+          <div class="company">Greg — Plant Identifier &amp; Care <span class="acq">(greg.app)</span></div>
+          <div class="period">Aug 2021 – Feb 2023</div>
+          <div class="role">Lead Software Engineer, iOS · Austin, TX (remote)</div>
+          <div class="desc">
+            <ul>
+              <li>Led iOS engineering across many App Store releases; hands-on development on all major features</li>
+              <li>Mentored engineers and worked closely with everyone across the company</li>
+            </ul>
+          </div>
+          <div class="tech">Swift · SwiftUI · Combine · UIKit · Core ML · Vision · StoreKit</div>
         </div>
 
         <div class="exp-item">
           <div class="company">Facebook</div>
           <div class="period">Oct 2020 – Jul 2021</div>
-          <div class="role">Staff Software Engineer, Mobile — Messenger</div>
+          <div class="role">Staff Software Engineer, Mobile — Messenger · Austin, TX (remote)</div>
           <div class="desc">
-            Led mobile engineering efforts on Messenger, building features for one of the world's
-            most-used communication platforms.
+            <ul>
+              <li>Tech Lead for Messenger Search (iOS) and Instagram Direct Search (Android) clients</li>
+              <li>Mentored junior engineers; worked with cross-functional teams on planning and product</li>
+            </ul>
           </div>
+          <div class="tech">Objective-C · Java · C/C++ · SQL · GraphQL · Hack · Buck</div>
         </div>
 
         <div class="exp-item">
           <div class="company">Google</div>
           <div class="period">Sep 2019 – Sep 2020</div>
-          <div class="role">Senior Software Engineer, Android</div>
+          <div class="role">Senior Software Engineer, Android — Google Mobile Services (GMS) · Austin, TX</div>
+          <div class="desc">
+            <ul>
+              <li>Supported teams across Google developing Android APIs for GMS</li>
+              <li>Developed and maintained GMS build/test infrastructure and data analysis pipelines; fixed GMS core bugs</li>
+            </ul>
+          </div>
+          <div class="tech">Android · Java · Flume · Blaze</div>
         </div>
 
         <div class="exp-item">
           <div class="company">Facebook</div>
           <div class="period">Aug 2017 – Sep 2019</div>
-          <div class="role">Staff Software Engineer, iOS — Messenger</div>
+          <div class="role">Staff Software Engineer, iOS — Messenger · Menlo Park, CA</div>
+          <div class="desc">
+            <ul>
+              <li>Tech Lead on Messenger iOS — led feature and infra work for the Messenger LightSpeed iOS launch (complete rewrite of Facebook Messenger)</li>
+              <li>Lead iOS engineer on Youth/Messenger Teens — defined, built and deployed many public-facing features</li>
+            </ul>
+          </div>
+          <div class="tech">Objective-C · C/C++ · GraphQL · Hack · Buck</div>
         </div>
 
         <div class="exp-item">
-          <div class="company">Cape</div>
-          <div class="period">Oct 2016 – Jul 2017</div>
-          <div class="role">Mobile Tech Lead</div>
+          <div class="company">Cape <span class="acq">(acquired by Motorola Solutions)</span></div>
+          <div class="period">Oct 2016 – Aug 2017</div>
+          <div class="role">Mobile Tech Lead, iOS &amp; Android · Redwood City, CA</div>
           <div class="desc">
-            Led mobile development for a drone and computer vision startup, building iOS apps
-            for real-time aerial control and video streaming.
+            <ul>
+              <li>Owned development of "Cape Operator" drone control app — real-time video streaming via WebRTC, UAV flight control, DJI SDK</li>
+              <li>Mobile architect and lead developer for consumer-facing "Cape Spectator" app on iOS and Android</li>
+              <li>Holds 2 patents related to operation of remote unmanned aerial vehicles</li>
+            </ul>
           </div>
+          <div class="tech">Swift · Objective-C · Java · WebRTC · DJI SDK</div>
         </div>
 
         <div class="exp-item">
           <div class="company">Tableau Software</div>
-          <div class="period">Mar 2016 – Sep 2016</div>
-          <div class="role">Software Development Manager — Vizable</div>
+          <div class="period">Jun 2014 – Sep 2015 &amp; Mar – Oct 2016</div>
+          <div class="role">Lead Software Engineer / Development Manager — Vizable · Palo Alto, CA</div>
           <div class="desc">
-            Managed a team of developers building Vizable, Tableau's consumer-focused iOS
-            data visualization app.
+            <ul>
+              <li>Defined overall architecture across all app layers: column-oriented database, data import pipeline, commands infrastructure, UI and animation framework</li>
+              <li>Grew team (dev, UX, QA, PM) from 3 to 17 people through internal and external hires</li>
+              <li>Lead developer through v1 launch; managed 11 developers over several post-launch releases</li>
+            </ul>
           </div>
+          <div class="tech">Swift · Objective-C · C++</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">VMware</div>
+          <div class="period">Jan 2012 – Jun 2014</div>
+          <div class="role">Architect &amp; Lead Developer / Development Manager, Mobile · Palo Alto, CA</div>
+          <div class="desc">
+            <ul>
+              <li>Built several public and internal Android and iOS apps</li>
+              <li>Established and ran mobile app development teams; owned business engagement, roadmaps, and architecture</li>
+              <li>Mobile architect and technical lead for AirWatch MDM rollout and other implementation projects</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Earlier Career divider -->
+        <div style="grid-column: 1 / -1;">
+          <div class="section-divider">Earlier Career</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Zeebu Mobile</div>
+          <div class="period">Jul 2009 – Dec 2011</div>
+          <div class="role">Founder &amp; CTO · Ottawa, Canada</div>
+          <div class="desc">
+            <ul>
+              <li>Lead developer and designer for over a dozen award-winning kids' apps with several million downloads across BlackBerry, Android, iPhone, iPad, and BlackBerry PlayBook</li>
+              <li>Handled fundraising, hiring, design, sales, marketing, and finance</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">Rove Mobile <span class="acq">(acquired by SolarWinds)</span></div>
+          <div class="period">Feb 2001 – Nov 2008</div>
+          <div class="role">Founder &amp; Lead Developer → VP Operations · Ottawa, Canada</div>
+          <div class="desc">
+            <ul>
+              <li>Lead developer for Mobile Admin and Mobile SSH — flagship IT management products for iOS, Android, BlackBerry, and J2ME</li>
+              <li>Grew the company to 40+ employees over 7 years while remaining profitable</li>
+              <li>As VP Operations: responsible for most of the company outside of sales and marketing</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">bitHeads</div>
+          <div class="period">2007 &amp; 2008–2009</div>
+          <div class="role">Mobile Software Developer · Ottawa, Canada</div>
+        </div>
+
+        <div class="exp-item">
+          <div class="company">TrueContext</div>
+          <div class="period">Sep 2006 – Sep 2007</div>
+          <div class="role">BlackBerry Team Lead &amp; Project Manager (consultant) · Ottawa, Canada</div>
         </div>
 
       </div>
@@ -302,14 +450,32 @@
       <div class="skills-grid">
         <span class="skill-tag">iOS</span>
         <span class="skill-tag">Swift</span>
+        <span class="skill-tag">SwiftUI</span>
         <span class="skill-tag">Objective-C</span>
+        <span class="skill-tag">UIKit</span>
+        <span class="skill-tag">Combine</span>
+        <span class="skill-tag">Core ML</span>
+        <span class="skill-tag">StoreKit</span>
         <span class="skill-tag">Android</span>
+        <span class="skill-tag">Java</span>
+        <span class="skill-tag">C/C++</span>
+        <span class="skill-tag">WebRTC</span>
+        <span class="skill-tag">GraphQL</span>
+        <span class="skill-tag">BlackBerry</span>
         <span class="skill-tag">Mobile Architecture</span>
-        <span class="skill-tag">React Native</span>
-        <span class="skill-tag">Mobile Performance</span>
-        <span class="skill-tag">Live Service Games</span>
-        <span class="skill-tag">Computer Vision</span>
         <span class="skill-tag">Team Leadership</span>
+        <span class="skill-tag">Founding &amp; Startups</span>
+      </div>
+    </section>
+
+    <!-- Publications -->
+    <section>
+      <h2>Publications</h2>
+      <div class="pub-item">
+        <div class="title">Beginning BlackBerry Development</div>
+        <div class="pub-year">2009 &amp; 2011</div>
+        <div class="publisher">Apress</div>
+        <div class="pub-note">All-time best-selling BlackBerry development book · 4/5 stars on Amazon</div>
       </div>
     </section>
 
@@ -319,13 +485,14 @@
       <div class="exp-list">
         <div class="exp-item">
           <div class="company">University of Waterloo</div>
-          <div class="period">1995 – 2000</div>
+          <div class="period">2000</div>
+          <div class="role">Honours Bachelor of Mathematics (Mathematical Sciences)</div>
         </div>
       </div>
     </section>
 
     <footer>
-      &copy; 2026 Anthony Rizk
+      <span>&copy; 2026 Anthony Rizk &nbsp;·&nbsp; <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a></span>
     </footer>
 
   </div>
