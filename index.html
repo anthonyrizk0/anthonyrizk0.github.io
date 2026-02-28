@@ -6,203 +6,366 @@
   <title>Anthony Rizk</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #fafafa;
-      --surface: #f4f4f5;
-      --border: #e4e4e7;
-      --text: #111827;
-      --text-secondary: #374151;
-      --muted: #6b7280;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
+      --parchment: #f4ede0;
+      --parchment-dark: #e8dccb;
+      --parchment-darker: #d9c9b0;
+      --moss: #3a5a30;
+      --moss-light: #5a7a50;
+      --moss-pale: #c8d9c0;
+      --bark: #5c3d1e;
+      --bark-light: #8b6640;
+      --clay: #9e5a30;
+      --gold: #b8922a;
+      --gold-pale: #e8d5a0;
+      --text: #2c1f0e;
+      --text-mid: #4a3820;
+      --text-muted: #7a6545;
+      --ink: #1e140a;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      font-family: 'Source Serif 4', Georgia, serif;
+      background-color: var(--parchment);
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.7;
       min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 28px,
+          rgba(90,60,20,0.025) 28px,
+          rgba(90,60,20,0.025) 29px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 60px,
+          rgba(90,60,20,0.012) 60px,
+          rgba(90,60,20,0.012) 61px
+        );
     }
 
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a { color: var(--moss); text-decoration: none; }
+    a:hover { color: var(--clay); text-decoration: underline; text-decoration-style: dotted; }
 
     /* ── Layout ── */
     .container {
-      max-width: 760px;
+      max-width: 780px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 0 28px;
     }
 
-    /* ── Hero ── */
+    /* CSS leaf shape */
+    .leaf {
+      display: inline-block;
+      width: 10px;
+      height: 16px;
+      background: var(--moss-light);
+      border-radius: 50% 0 50% 0;
+      transform: rotate(-20deg);
+      opacity: 0.7;
+    }
+
+    .leaf.r { border-radius: 0 50% 0 50%; transform: rotate(20deg); }
+    .leaf.sm { width: 7px; height: 11px; }
+
+    /* ── Header / Hero ── */
     header {
-      padding: 80px 0 60px;
-      border-bottom: 1px solid var(--border);
+      padding: 72px 0 56px;
+      position: relative;
     }
 
-    .hero {
-      display: flex;
-      align-items: center;
-      gap: 36px;
+    header::before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(to right,
+        var(--moss) 0%,
+        var(--moss-light) 30%,
+        var(--gold) 50%,
+        var(--moss-light) 70%,
+        var(--moss) 100%
+      );
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
-    .avatar-placeholder {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 2px solid var(--border);
-      flex-shrink: 0;
+    .nameplate {
+      text-align: center;
+      position: relative;
+    }
+
+    .nameplate .eyebrow {
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 3.5px;
+      text-transform: uppercase;
+      color: var(--bark-light);
+      margin-bottom: 10px;
+    }
+
+    .nameplate h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .nameplate .subtitle {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* Ornamental divider */
+    .ornament {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
-      color: var(--muted);
+      gap: 10px;
+      margin: 20px 0;
     }
 
-    .hero-text h1 {
-      font-size: 2rem;
-      font-weight: 600;
-      letter-spacing: -0.5px;
+    .ornament .rule {
+      width: 80px;
+      height: 1px;
+      background: var(--parchment-darker);
     }
 
-    .hero-text .subtitle {
-      font-size: 1rem;
-      color: var(--muted);
-      margin-top: 4px;
+    .ornament .pip {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
     }
 
-    .hero-text .location {
-      font-size: 0.875rem;
-      color: var(--muted);
-      margin-top: 4px;
+    .ornament .diamond {
+      width: 7px;
+      height: 7px;
+      background: var(--moss-light);
+      transform: rotate(45deg);
     }
 
     .links {
       display: flex;
       gap: 12px;
-      margin-top: 20px;
+      justify-content: center;
       flex-wrap: wrap;
+      margin-top: 4px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      transition: border-color 0.15s, background 0.15s;
+      padding: 8px 20px;
+      border-radius: 2px;
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.82rem;
+      font-weight: 400;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border: 1px solid var(--parchment-darker);
+      background: transparent;
+      color: var(--text-mid);
+      transition: all 0.2s;
     }
 
-    .btn:hover { border-color: var(--accent); background: var(--accent-soft); text-decoration: none; }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .btn.primary:hover { background: #3a7ae8; border-color: #3a7ae8; }
+    .btn:hover {
+      border-color: var(--moss);
+      background: var(--moss-pale);
+      color: var(--moss);
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: var(--moss);
+      border-color: var(--moss);
+      color: var(--parchment);
+    }
+
+    .btn.primary:hover {
+      background: var(--moss-light);
+      border-color: var(--moss-light);
+      color: var(--parchment);
+    }
 
     /* ── Sections ── */
     section {
-      padding: 48px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 44px 0;
+      position: relative;
+    }
+
+    section + section {
+      border-top: 1px solid var(--parchment-darker);
     }
 
     section h2 {
-      font-size: 0.75rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.45rem;
       font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 28px;
+      color: var(--bark);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    section h2::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--parchment-darker), transparent);
     }
 
     /* ── About ── */
     .about p {
-      font-size: 1rem;
-      color: var(--text-secondary);
-      line-height: 1.8;
+      font-size: 1.02rem;
+      color: var(--text-mid);
+      line-height: 1.85;
+      max-width: 680px;
+    }
+
+    .about p::first-letter {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 0.75;
+      float: left;
+      margin-right: 6px;
+      margin-top: 6px;
+      color: var(--moss);
     }
 
     /* ── Experience ── */
-    .exp-list { display: flex; flex-direction: column; gap: 32px; }
+    .exp-list { display: flex; flex-direction: column; gap: 0; }
 
     .exp-item {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 2px 16px;
+      padding: 24px 0;
+      border-bottom: 1px dashed var(--parchment-darker);
+      position: relative;
+    }
+
+    .exp-item:last-child { border-bottom: none; }
+
+    .exp-item::before {
+      content: '';
+      position: absolute;
+      left: -20px;
+      top: 30px;
+      width: 6px;
+      height: 6px;
+      background: var(--moss-pale);
+      border: 1px solid var(--moss-light);
+      border-radius: 50%;
     }
 
     .exp-item .company {
+      font-family: 'Playfair Display', serif;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 1rem;
+      color: var(--ink);
     }
 
     .exp-item .acq {
-      font-size: 0.8rem;
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.78rem;
       font-weight: 400;
-      color: var(--muted);
+      font-style: italic;
+      color: var(--text-muted);
     }
 
     .exp-item .role {
-      font-size: 0.875rem;
-      color: var(--muted);
-      margin-top: 3px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     .exp-item .period {
-      font-size: 0.8rem;
-      color: var(--muted);
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--gold);
       white-space: nowrap;
       text-align: right;
       align-self: start;
-      padding-top: 3px;
+      padding-top: 4px;
     }
 
     .exp-item .desc {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-top: 8px;
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      margin-top: 10px;
       grid-column: 1 / -1;
-      line-height: 1.7;
+      line-height: 1.75;
     }
 
     .exp-item .desc ul {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
+    }
+
+    .exp-item .desc ul li {
+      padding-left: 18px;
+      position: relative;
     }
 
     .exp-item .desc ul li::before {
-      content: "–";
-      margin-right: 8px;
-      color: var(--muted);
+      content: '✦';
+      position: absolute;
+      left: 0;
+      color: var(--moss-light);
+      font-size: 0.55rem;
+      top: 5px;
     }
 
     .exp-item .tech {
-      font-size: 0.78rem;
-      color: var(--muted);
+      font-size: 0.76rem;
+      color: var(--bark-light);
       margin-top: 8px;
       grid-column: 1 / -1;
+      font-style: italic;
+      letter-spacing: 0.2px;
     }
 
     .section-divider {
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      padding-top: 28px;
-      margin-top: 4px;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--text-muted);
+      padding: 20px 0 8px;
       grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--parchment-darker);
     }
 
     /* ── Skills ── */
@@ -213,12 +376,20 @@
     }
 
     .skill-tag {
-      padding: 5px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface);
+      padding: 5px 13px;
+      border: 1px solid var(--parchment-darker);
+      background: rgba(200, 217, 192, 0.3);
+      font-family: 'Source Serif 4', serif;
       font-size: 0.8rem;
-      color: #ccc;
+      color: var(--moss);
+      border-radius: 2px;
+      transition: all 0.15s;
+      cursor: default;
+    }
+
+    .skill-tag:hover {
+      background: var(--moss-pale);
+      border-color: var(--moss-light);
     }
 
     /* ── Publication ── */
@@ -226,49 +397,129 @@
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 4px 16px;
+      background: rgba(184, 146, 42, 0.06);
+      border: 1px solid var(--gold-pale);
+      border-left: 3px solid var(--gold);
+      padding: 16px 20px;
+      border-radius: 2px;
     }
 
     .pub-item .title {
+      font-family: 'Playfair Display', serif;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 1rem;
+      color: var(--ink);
+      font-style: italic;
     }
 
     .pub-item .publisher {
-      font-size: 0.875rem;
-      color: var(--muted);
-      margin-top: 3px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     .pub-item .pub-year {
       font-size: 0.8rem;
-      color: var(--muted);
+      font-style: italic;
+      color: var(--gold);
       text-align: right;
       align-self: start;
-      padding-top: 3px;
+      padding-top: 4px;
     }
 
     .pub-item .pub-note {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-top: 6px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 8px;
       grid-column: 1 / -1;
+      font-style: italic;
+    }
+
+    /* ── Education ── */
+    .edu-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2px 16px;
+    }
+
+    .edu-item .company {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    .edu-item .period {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--gold);
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .edu-item .role {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     /* ── Footer ── */
     footer {
-      padding: 32px 0;
+      padding: 32px 0 40px;
       text-align: center;
+      position: relative;
+    }
+
+    footer::before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--parchment-darker), transparent);
+      margin-bottom: 24px;
+    }
+
+    .footer-ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--moss-light);
+    }
+
+    footer p {
       font-size: 0.8rem;
-      color: var(--muted);
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    footer a { color: var(--bark-light); }
+    footer a:hover { color: var(--moss); }
+
+    body::after {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(to right,
+        var(--moss) 0%,
+        var(--moss-light) 30%,
+        var(--gold) 50%,
+        var(--moss-light) 70%,
+        var(--moss) 100%
+      );
     }
 
     @media (max-width: 560px) {
-      .hero { flex-direction: column; align-items: flex-start; gap: 20px; }
-      .hero-text h1 { font-size: 1.6rem; }
+      header { padding: 52px 0 40px; }
+      .nameplate h1 { font-size: 2.2rem; }
       .exp-item { grid-template-columns: 1fr; }
       .exp-item .period { text-align: left; }
       .pub-item { grid-template-columns: 1fr; }
       .pub-item .pub-year { text-align: left; }
+      .edu-item { grid-template-columns: 1fr; }
+      .exp-item::before { display: none; }
     }
   </style>
 </head>
@@ -277,17 +528,25 @@
 
     <!-- Hero -->
     <header>
-      <div class="hero">
-        <div class="avatar-placeholder">AR</div>
-        <div class="hero-text">
-          <h1>Anthony Rizk</h1>
-          <div class="subtitle">Mobile Engineer · iOS</div>
-          <div class="location">Austin, TX</div>
-          <div class="links">
-            <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">LinkedIn</a>
-            <a class="btn" href="mailto:anthony.rizk@gmail.com">Email</a>
-          </div>
-        </div>
+      <div class="nameplate">
+        <div class="eyebrow">Mobile Engineer &nbsp;·&nbsp; iOS &nbsp;·&nbsp; Austin, TX</div>
+        <h1>Anthony Rizk</h1>
+        <div class="subtitle">Twenty-plus years building products people love</div>
+      </div>
+
+      <div class="ornament">
+        <div class="rule"></div>
+        <div class="leaf sm"></div>
+        <div class="pip"></div>
+        <div class="diamond"></div>
+        <div class="pip"></div>
+        <div class="leaf sm r"></div>
+        <div class="rule"></div>
+      </div>
+
+      <div class="links">
+        <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="btn" href="mailto:anthony.rizk@gmail.com">Email</a>
       </div>
     </header>
 
@@ -413,7 +672,6 @@
           </div>
         </div>
 
-        <!-- Earlier Career divider -->
         <div style="grid-column: 1 / -1;">
           <div class="section-divider">Earlier Career</div>
         </div>
@@ -506,17 +764,20 @@
     <!-- Education -->
     <section>
       <h2>Education</h2>
-      <div class="exp-list">
-        <div class="exp-item">
-          <div class="company">University of Waterloo</div>
-          <div class="period">2000</div>
-          <div class="role">Honours Bachelor of Mathematics (Mathematical Sciences)</div>
-        </div>
+      <div class="edu-item">
+        <div class="company">University of Waterloo</div>
+        <div class="period">2000</div>
+        <div class="role">Honours Bachelor of Mathematics (Mathematical Sciences)</div>
       </div>
     </section>
 
     <footer>
-      <span>&copy; 2026 Anthony Rizk &nbsp;·&nbsp; <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a></span>
+      <div class="footer-ornament">
+        <span class="leaf sm"></span>
+        <span style="font-size:0.65rem; letter-spacing:2px;">✦ ✦ ✦</span>
+        <span class="leaf sm r"></span>
+      </div>
+      <p>&copy; 2026 Anthony Rizk &nbsp;·&nbsp; <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a></p>
     </footer>
 
   </div>
