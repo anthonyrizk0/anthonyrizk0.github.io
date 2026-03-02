@@ -1,785 +1,1024 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Anthony Rizk</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --parchment: #f4ede0;
-      --parchment-dark: #e8dccb;
-      --parchment-darker: #d9c9b0;
-      --moss: #3a5a30;
-      --moss-light: #5a7a50;
-      --moss-pale: #c8d9c0;
-      --bark: #5c3d1e;
-      --bark-light: #8b6640;
-      --clay: #9e5a30;
-      --gold: #b8922a;
-      --gold-pale: #e8d5a0;
-      --text: #2c1f0e;
-      --text-mid: #4a3820;
-      --text-muted: #7a6545;
-      --ink: #1e140a;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Source Serif 4', Georgia, serif;
-      background-color: var(--parchment);
-      color: var(--text);
-      line-height: 1.7;
-      min-height: 100vh;
-      background-image:
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 28px,
-          rgba(90,60,20,0.025) 28px,
-          rgba(90,60,20,0.025) 29px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          transparent,
-          transparent 60px,
-          rgba(90,60,20,0.012) 60px,
-          rgba(90,60,20,0.012) 61px
-        );
-    }
-
-    a { color: var(--moss); text-decoration: none; }
-    a:hover { color: var(--clay); text-decoration: underline; text-decoration-style: dotted; }
-
-    /* ── Layout ── */
-    .container {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 0 28px;
-    }
-
-    /* CSS leaf shape */
-    .leaf {
-      display: inline-block;
-      width: 10px;
-      height: 16px;
-      background: var(--moss-light);
-      border-radius: 50% 0 50% 0;
-      transform: rotate(-20deg);
-      opacity: 0.7;
-    }
-
-    .leaf.r { border-radius: 0 50% 0 50%; transform: rotate(20deg); }
-    .leaf.sm { width: 7px; height: 11px; }
-
-    /* ── Header / Hero ── */
-    header {
-      padding: 72px 0 56px;
-      position: relative;
-    }
-
-    header::before {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(to right,
-        var(--moss) 0%,
-        var(--moss-light) 30%,
-        var(--gold) 50%,
-        var(--moss-light) 70%,
-        var(--moss) 100%
-      );
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .nameplate {
-      text-align: center;
-      position: relative;
-    }
-
-    .nameplate .eyebrow {
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.72rem;
-      font-weight: 400;
-      letter-spacing: 3.5px;
-      text-transform: uppercase;
-      color: var(--bark-light);
-      margin-bottom: 10px;
-    }
-
-    .nameplate h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(2.4rem, 6vw, 3.6rem);
-      font-weight: 700;
-      color: var(--ink);
-      letter-spacing: -0.5px;
-      line-height: 1.1;
-    }
-
-    .nameplate .subtitle {
-      font-family: 'Source Serif 4', serif;
-      font-size: 1.05rem;
-      font-style: italic;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
-
-    /* Ornamental divider */
-    .ornament {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px 0;
-    }
-
-    .ornament .rule {
-      width: 80px;
-      height: 1px;
-      background: var(--parchment-darker);
-    }
-
-    .ornament .pip {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--gold);
-    }
-
-    .ornament .diamond {
-      width: 7px;
-      height: 7px;
-      background: var(--moss-light);
-      transform: rotate(45deg);
-    }
-
-    .links {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 4px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 20px;
-      border-radius: 2px;
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.82rem;
-      font-weight: 400;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      border: 1px solid var(--parchment-darker);
-      background: transparent;
-      color: var(--text-mid);
-      transition: all 0.2s;
-    }
-
-    .btn:hover {
-      border-color: var(--moss);
-      background: var(--moss-pale);
-      color: var(--moss);
-      text-decoration: none;
-    }
-
-    .btn.primary {
-      background: var(--moss);
-      border-color: var(--moss);
-      color: var(--parchment);
-    }
-
-    .btn.primary:hover {
-      background: var(--moss-light);
-      border-color: var(--moss-light);
-      color: var(--parchment);
-    }
-
-    /* ── Sections ── */
-    section {
-      padding: 44px 0;
-      position: relative;
-    }
-
-    section + section {
-      border-top: 1px solid var(--parchment-darker);
-    }
-
-    section h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.45rem;
-      font-weight: 600;
-      color: var(--bark);
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    section h2::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(to right, var(--parchment-darker), transparent);
-    }
-
-    /* ── About ── */
-    .about p {
-      font-size: 1.02rem;
-      color: var(--text-mid);
-      line-height: 1.85;
-      max-width: 680px;
-    }
-
-    .about p::first-letter {
-      font-family: 'Playfair Display', serif;
-      font-size: 3.2rem;
-      font-weight: 700;
-      line-height: 0.75;
-      float: left;
-      margin-right: 6px;
-      margin-top: 6px;
-      color: var(--moss);
-    }
-
-    /* ── Experience ── */
-    .exp-list { display: flex; flex-direction: column; gap: 0; }
-
-    .exp-item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 2px 16px;
-      padding: 24px 0;
-      border-bottom: 1px dashed var(--parchment-darker);
-      position: relative;
-    }
-
-    .exp-item:last-child { border-bottom: none; }
-
-    .exp-item::before {
-      content: '';
-      position: absolute;
-      left: -20px;
-      top: 30px;
-      width: 6px;
-      height: 6px;
-      background: var(--moss-pale);
-      border: 1px solid var(--moss-light);
-      border-radius: 50%;
-    }
-
-    .exp-item .company {
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--ink);
-    }
-
-    .exp-item .acq {
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.78rem;
-      font-weight: 400;
-      font-style: italic;
-      color: var(--text-muted);
-    }
-
-    .exp-item .role {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .exp-item .period {
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.78rem;
-      font-style: italic;
-      color: var(--gold);
-      white-space: nowrap;
-      text-align: right;
-      align-self: start;
-      padding-top: 4px;
-    }
-
-    .exp-item .desc {
-      font-size: 0.88rem;
-      color: var(--text-mid);
-      margin-top: 10px;
-      grid-column: 1 / -1;
-      line-height: 1.75;
-    }
-
-    .exp-item .desc ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .exp-item .desc ul li {
-      padding-left: 18px;
-      position: relative;
-    }
-
-    .exp-item .desc ul li::before {
-      content: '✦';
-      position: absolute;
-      left: 0;
-      color: var(--moss-light);
-      font-size: 0.55rem;
-      top: 5px;
-    }
-
-    .exp-item .tech {
-      font-size: 0.76rem;
-      color: var(--bark-light);
-      margin-top: 8px;
-      grid-column: 1 / -1;
-      font-style: italic;
-      letter-spacing: 0.2px;
-    }
-
-    .section-divider {
-      font-family: 'Playfair Display', serif;
-      font-size: 0.78rem;
-      font-style: italic;
-      color: var(--text-muted);
-      padding: 20px 0 8px;
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .section-divider::before,
-    .section-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--parchment-darker);
-    }
-
-    /* ── Skills ── */
-    .skills-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .skill-tag {
-      padding: 5px 13px;
-      border: 1px solid var(--parchment-darker);
-      background: rgba(200, 217, 192, 0.3);
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.8rem;
-      color: var(--moss);
-      border-radius: 2px;
-      transition: all 0.15s;
-      cursor: default;
-    }
-
-    .skill-tag:hover {
-      background: var(--moss-pale);
-      border-color: var(--moss-light);
-    }
-
-    /* ── Publication ── */
-    .pub-item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 4px 16px;
-      background: rgba(184, 146, 42, 0.06);
-      border: 1px solid var(--gold-pale);
-      border-left: 3px solid var(--gold);
-      padding: 16px 20px;
-      border-radius: 2px;
-    }
-
-    .pub-item .title {
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--ink);
-      font-style: italic;
-    }
-
-    .pub-item .publisher {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .pub-item .pub-year {
-      font-size: 0.8rem;
-      font-style: italic;
-      color: var(--gold);
-      text-align: right;
-      align-self: start;
-      padding-top: 4px;
-    }
-
-    .pub-item .pub-note {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 8px;
-      grid-column: 1 / -1;
-      font-style: italic;
-    }
-
-    /* ── Education ── */
-    .edu-item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 2px 16px;
-    }
-
-    .edu-item .company {
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--ink);
-    }
-
-    .edu-item .period {
-      font-size: 0.78rem;
-      font-style: italic;
-      color: var(--gold);
-      white-space: nowrap;
-      text-align: right;
-    }
-
-    .edu-item .role {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    /* ── Footer ── */
-    footer {
-      padding: 32px 0 40px;
-      text-align: center;
-      position: relative;
-    }
-
-    footer::before {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--parchment-darker), transparent);
-      margin-bottom: 24px;
-    }
-
-    .footer-ornament {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 12px;
-      color: var(--moss-light);
-    }
-
-    footer p {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      letter-spacing: 0.3px;
-    }
-
-    footer a { color: var(--bark-light); }
-    footer a:hover { color: var(--moss); }
-
-    body::after {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(to right,
-        var(--moss) 0%,
-        var(--moss-light) 30%,
-        var(--gold) 50%,
-        var(--moss-light) 70%,
-        var(--moss) 100%
-      );
-    }
-
-    @media (max-width: 560px) {
-      header { padding: 52px 0 40px; }
-      .nameplate h1 { font-size: 2.2rem; }
-      .exp-item { grid-template-columns: 1fr; }
-      .exp-item .period { text-align: left; }
-      .pub-item { grid-template-columns: 1fr; }
-      .pub-item .pub-year { text-align: left; }
-      .edu-item { grid-template-columns: 1fr; }
-      .exp-item::before { display: none; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-
-    <!-- Hero -->
-    <header>
-      <div class="nameplate">
-        <div class="eyebrow">Mobile Engineer &nbsp;·&nbsp; iOS &nbsp;·&nbsp; Austin, TX</div>
-        <h1>Anthony Rizk</h1>
-        <div class="subtitle">Twenty-plus years building products people love</div>
-      </div>
-
-      <div class="ornament">
-        <div class="rule"></div>
-        <div class="leaf sm"></div>
-        <div class="pip"></div>
-        <div class="diamond"></div>
-        <div class="pip"></div>
-        <div class="leaf sm r"></div>
-        <div class="rule"></div>
-      </div>
-
-      <div class="links">
-        <a class="btn primary" href="https://www.linkedin.com/in/anthonyrizk" target="_blank" rel="noopener">LinkedIn</a>
-        <a class="btn" href="mailto:anthony.rizk@gmail.com">Email</a>
-      </div>
-    </header>
-
-    <!-- About -->
-    <section class="about">
-      <h2>About</h2>
-      <p>
-        Mobile engineer with 20+ years of experience, focused primarily on iOS. I've built products used by millions —
-        from leading Messenger's LightSpeed rewrite at Facebook to shipping a plant-care app loved by gardeners everywhere.
-        I've founded and grown companies, managed large teams, held staff-level IC roles at big tech, and everything in between.
-        Published author of the all-time best-selling BlackBerry development book.
-      </p>
-    </section>
-
-    <!-- Experience -->
-    <section>
-      <h2>Experience</h2>
-      <div class="exp-list">
-
-        <div class="exp-item">
-          <div class="company">ClassDojo</div>
-          <div class="period">May 2023 – Present</div>
-          <div class="role">Staff Software Engineer, iOS · Austin, TX (remote)</div>
-          <div class="desc">
-            <ul>
-              <li>Lead iOS engineer owning mobile architecture and engineering across student and classroom-facing products</li>
-              <li>Drove major feature development and releases across the ClassDojo app ecosystem</li>
-              <li>Worked closely with product, design, and cross-functional teams to define and ship high-quality mobile experiences</li>
-            </ul>
-          </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Anthony Rizk</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --parchment: #f4ede0;
+                --parchment-dark: #e8dccb;
+                --parchment-darker: #d9c9b0;
+                --moss: #3a5a30;
+                --moss-light: #5a7a50;
+                --moss-pale: #c8d9c0;
+                --bark: #5c3d1e;
+                --bark-light: #8b6640;
+                --clay: #9e5a30;
+                --gold: #b8922a;
+                --gold-pale: #e8d5a0;
+                --text: #2c1f0e;
+                --text-mid: #4a3820;
+                --text-muted: #7a6545;
+                --ink: #1e140a;
+            }
+
+            html {
+                scroll-behavior: smooth;
+            }
+
+            body {
+                font-family: "Source Serif 4", Georgia, serif;
+                background-color: var(--parchment);
+                color: var(--text);
+                line-height: 1.7;
+                min-height: 100vh;
+                background-image:
+                    repeating-linear-gradient(
+                        0deg,
+                        transparent,
+                        transparent 28px,
+                        rgba(90, 60, 20, 0.025) 28px,
+                        rgba(90, 60, 20, 0.025) 29px
+                    ),
+                    repeating-linear-gradient(
+                        90deg,
+                        transparent,
+                        transparent 60px,
+                        rgba(90, 60, 20, 0.012) 60px,
+                        rgba(90, 60, 20, 0.012) 61px
+                    );
+            }
+
+            a {
+                color: var(--moss);
+                text-decoration: none;
+            }
+            a:hover {
+                color: var(--clay);
+                text-decoration: underline;
+                text-decoration-style: dotted;
+            }
+
+            /* ── Layout ── */
+            .container {
+                max-width: 780px;
+                margin: 0 auto;
+                padding: 0 28px;
+            }
+
+            /* CSS leaf shape */
+            .leaf {
+                display: inline-block;
+                width: 10px;
+                height: 16px;
+                background: var(--moss-light);
+                border-radius: 50% 0 50% 0;
+                transform: rotate(-20deg);
+                opacity: 0.7;
+            }
+
+            .leaf.r {
+                border-radius: 0 50% 0 50%;
+                transform: rotate(20deg);
+            }
+            .leaf.sm {
+                width: 7px;
+                height: 11px;
+            }
+
+            /* ── Header / Hero ── */
+            header {
+                padding: 72px 0 56px;
+                position: relative;
+            }
+
+            header::before {
+                content: "";
+                display: block;
+                width: 100%;
+                height: 4px;
+                background: linear-gradient(
+                    to right,
+                    var(--moss) 0%,
+                    var(--moss-light) 30%,
+                    var(--gold) 50%,
+                    var(--moss-light) 70%,
+                    var(--moss) 100%
+                );
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+
+            .nameplate {
+                text-align: center;
+                position: relative;
+            }
+
+            .nameplate .eyebrow {
+                font-family: "Source Serif 4", serif;
+                font-size: 0.72rem;
+                font-weight: 400;
+                letter-spacing: 3.5px;
+                text-transform: uppercase;
+                color: var(--bark-light);
+                margin-bottom: 10px;
+            }
+
+            .nameplate h1 {
+                font-family: "Playfair Display", serif;
+                font-size: clamp(2.4rem, 6vw, 3.6rem);
+                font-weight: 700;
+                color: var(--ink);
+                letter-spacing: -0.5px;
+                line-height: 1.1;
+            }
+
+            .nameplate .subtitle {
+                font-family: "Source Serif 4", serif;
+                font-size: 1.05rem;
+                font-style: italic;
+                color: var(--text-muted);
+                margin-top: 8px;
+            }
+
+            /* Ornamental divider */
+            .ornament {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                margin: 20px 0;
+            }
+
+            .ornament .rule {
+                width: 80px;
+                height: 1px;
+                background: var(--parchment-darker);
+            }
+
+            .ornament .pip {
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: var(--gold);
+            }
+
+            .ornament .diamond {
+                width: 7px;
+                height: 7px;
+                background: var(--moss-light);
+                transform: rotate(45deg);
+            }
+
+            .links {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                flex-wrap: wrap;
+                margin-top: 4px;
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 20px;
+                border-radius: 2px;
+                font-family: "Source Serif 4", serif;
+                font-size: 0.82rem;
+                font-weight: 400;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                border: 1px solid var(--parchment-darker);
+                background: transparent;
+                color: var(--text-mid);
+                transition: all 0.2s;
+            }
+
+            .btn:hover {
+                border-color: var(--moss);
+                background: var(--moss-pale);
+                color: var(--moss);
+                text-decoration: none;
+            }
+
+            .btn.primary {
+                background: var(--moss);
+                border-color: var(--moss);
+                color: var(--parchment);
+            }
+
+            .btn.primary:hover {
+                background: var(--moss-light);
+                border-color: var(--moss-light);
+                color: var(--parchment);
+            }
+
+            /* ── Sections ── */
+            section {
+                padding: 44px 0;
+                position: relative;
+            }
+
+            section + section {
+                border-top: 1px solid var(--parchment-darker);
+            }
+
+            section h2 {
+                font-family: "Playfair Display", serif;
+                font-size: 1.45rem;
+                font-weight: 600;
+                color: var(--bark);
+                margin-bottom: 24px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            section h2::after {
+                content: "";
+                flex: 1;
+                height: 1px;
+                background: linear-gradient(
+                    to right,
+                    var(--parchment-darker),
+                    transparent
+                );
+            }
+
+            /* ── About ── */
+            .about p {
+                font-size: 1.02rem;
+                color: var(--text-mid);
+                line-height: 1.85;
+                max-width: 680px;
+            }
+
+            .about p::first-letter {
+                font-family: "Playfair Display", serif;
+                font-size: 3.2rem;
+                font-weight: 700;
+                line-height: 0.75;
+                float: left;
+                margin-right: 6px;
+                margin-top: 6px;
+                color: var(--moss);
+            }
+
+            /* ── Experience ── */
+            .exp-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .exp-item {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 2px 16px;
+                padding: 24px 0;
+                border-bottom: 1px dashed var(--parchment-darker);
+                position: relative;
+            }
+
+            .exp-item:last-child {
+                border-bottom: none;
+            }
+
+            .exp-item::before {
+                content: "";
+                position: absolute;
+                left: -20px;
+                top: 30px;
+                width: 6px;
+                height: 6px;
+                background: var(--moss-pale);
+                border: 1px solid var(--moss-light);
+                border-radius: 50%;
+            }
+
+            .exp-item .company {
+                font-family: "Playfair Display", serif;
+                font-weight: 600;
+                font-size: 1rem;
+                color: var(--ink);
+            }
+
+            .exp-item .acq {
+                font-family: "Source Serif 4", serif;
+                font-size: 0.78rem;
+                font-weight: 400;
+                font-style: italic;
+                color: var(--text-muted);
+            }
+
+            .exp-item .role {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin-top: 2px;
+            }
+
+            .exp-item .period {
+                font-family: "Source Serif 4", serif;
+                font-size: 0.78rem;
+                font-style: italic;
+                color: var(--gold);
+                white-space: nowrap;
+                text-align: right;
+                align-self: start;
+                padding-top: 4px;
+            }
+
+            .exp-item .desc {
+                font-size: 0.88rem;
+                color: var(--text-mid);
+                margin-top: 10px;
+                grid-column: 1 / -1;
+                line-height: 1.75;
+            }
+
+            .exp-item .desc ul {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .exp-item .desc ul li {
+                padding-left: 18px;
+                position: relative;
+            }
+
+            .exp-item .desc ul li::before {
+                content: "✦";
+                position: absolute;
+                left: 0;
+                color: var(--moss-light);
+                font-size: 0.55rem;
+                top: 5px;
+            }
+
+            .exp-item .tech {
+                font-size: 0.76rem;
+                color: var(--bark-light);
+                margin-top: 8px;
+                grid-column: 1 / -1;
+                font-style: italic;
+                letter-spacing: 0.2px;
+            }
+
+            .section-divider {
+                font-family: "Playfair Display", serif;
+                font-size: 0.78rem;
+                font-style: italic;
+                color: var(--text-muted);
+                padding: 20px 0 8px;
+                grid-column: 1 / -1;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .section-divider::before,
+            .section-divider::after {
+                content: "";
+                flex: 1;
+                height: 1px;
+                background: var(--parchment-darker);
+            }
+
+            /* ── Skills ── */
+            .skills-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .skill-tag {
+                padding: 5px 13px;
+                border: 1px solid var(--parchment-darker);
+                background: rgba(200, 217, 192, 0.3);
+                font-family: "Source Serif 4", serif;
+                font-size: 0.8rem;
+                color: var(--moss);
+                border-radius: 2px;
+                transition: all 0.15s;
+                cursor: default;
+            }
+
+            .skill-tag:hover {
+                background: var(--moss-pale);
+                border-color: var(--moss-light);
+            }
+
+            /* ── Publication ── */
+            .pub-item {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 4px 16px;
+                background: rgba(184, 146, 42, 0.06);
+                border: 1px solid var(--gold-pale);
+                border-left: 3px solid var(--gold);
+                padding: 16px 20px;
+                border-radius: 2px;
+            }
+
+            .pub-item .title {
+                font-family: "Playfair Display", serif;
+                font-weight: 600;
+                font-size: 1rem;
+                color: var(--ink);
+                font-style: italic;
+            }
+
+            .pub-item .publisher {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin-top: 2px;
+            }
+
+            .pub-item .pub-year {
+                font-size: 0.8rem;
+                font-style: italic;
+                color: var(--gold);
+                text-align: right;
+                align-self: start;
+                padding-top: 4px;
+            }
+
+            .pub-item .pub-note {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin-top: 8px;
+                grid-column: 1 / -1;
+                font-style: italic;
+            }
+
+            /* ── Education ── */
+            .edu-item {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 2px 16px;
+            }
+
+            .edu-item .company {
+                font-family: "Playfair Display", serif;
+                font-weight: 600;
+                font-size: 1rem;
+                color: var(--ink);
+            }
+
+            .edu-item .period {
+                font-size: 0.78rem;
+                font-style: italic;
+                color: var(--gold);
+                white-space: nowrap;
+                text-align: right;
+            }
+
+            .edu-item .role {
+                font-size: 0.88rem;
+                color: var(--text-muted);
+                margin-top: 2px;
+            }
+
+            /* ── Footer ── */
+            footer {
+                padding: 32px 0 40px;
+                text-align: center;
+                position: relative;
+            }
+
+            footer::before {
+                content: "";
+                display: block;
+                width: 100%;
+                height: 1px;
+                background: linear-gradient(
+                    to right,
+                    transparent,
+                    var(--parchment-darker),
+                    transparent
+                );
+                margin-bottom: 24px;
+            }
+
+            .footer-ornament {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin-bottom: 12px;
+                color: var(--moss-light);
+            }
+
+            footer p {
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                letter-spacing: 0.3px;
+            }
+
+            footer a {
+                color: var(--bark-light);
+            }
+            footer a:hover {
+                color: var(--moss);
+            }
+
+            body::after {
+                content: "";
+                display: block;
+                width: 100%;
+                height: 4px;
+                background: linear-gradient(
+                    to right,
+                    var(--moss) 0%,
+                    var(--moss-light) 30%,
+                    var(--gold) 50%,
+                    var(--moss-light) 70%,
+                    var(--moss) 100%
+                );
+            }
+
+            @media (max-width: 560px) {
+                header {
+                    padding: 52px 0 40px;
+                }
+                .nameplate h1 {
+                    font-size: 2.2rem;
+                }
+                .exp-item {
+                    grid-template-columns: 1fr;
+                }
+                .exp-item .period {
+                    text-align: left;
+                }
+                .pub-item {
+                    grid-template-columns: 1fr;
+                }
+                .pub-item .pub-year {
+                    text-align: left;
+                }
+                .edu-item {
+                    grid-template-columns: 1fr;
+                }
+                .exp-item::before {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Hero -->
+            <header>
+                <div class="nameplate">
+                    <div class="eyebrow">
+                        Mobile Engineer &nbsp;·&nbsp; iOS &nbsp;·&nbsp; Austin,
+                        TX
+                    </div>
+                    <h1>Anthony Rizk</h1>
+                    <div class="subtitle">
+                        Twenty-plus years building products people love
+                    </div>
+                </div>
+
+                <div class="ornament">
+                    <div class="rule"></div>
+                    <div class="leaf sm"></div>
+                    <div class="pip"></div>
+                    <div class="diamond"></div>
+                    <div class="pip"></div>
+                    <div class="leaf sm r"></div>
+                    <div class="rule"></div>
+                </div>
+
+                <div class="links">
+                    <a
+                        class="btn primary"
+                        href="https://www.linkedin.com/in/anthonyrizk"
+                        target="_blank"
+                        rel="noopener"
+                        >LinkedIn</a
+                    >
+                    <a class="btn" href="mailto:anthony.rizk@gmail.com"
+                        >Email</a
+                    >
+                </div>
+            </header>
+
+            <!-- About -->
+            <section class="about">
+                <h2>About</h2>
+                <p>
+                    Mobile engineer with 20+ years of experience, focused
+                    primarily on iOS. I've built products used by millions —
+                    from helping lead Messenger's LightSpeed rewrite at Facebook
+                    to shipping a plant-care app loved by gardeners everywhere.
+                    I've founded and grown companies, managed large teams, held
+                    staff-level IC roles at big tech, and everything in between.
+                </p>
+            </section>
+
+            <!-- Experience -->
+            <section>
+                <h2>Experience</h2>
+                <div class="exp-list">
+                    <div class="exp-item">
+                        <div class="company">ClassDojo</div>
+                        <div class="period">May 2023 – Present</div>
+                        <div class="role">
+                            Staff Software Engineer, iOS · Austin, TX (remote)
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Lead iOS engineer owning mobile architecture
+                                    and engineering across teacher, parent and
+                                    student-facing products
+                                </li>
+                                <li>
+                                    Drove major feature development and releases
+                                    across the ClassDojo app
+                                </li>
+                                <li>
+                                    Worked closely with product, design, and
+                                    cross-functional teams to define and ship
+                                    high-quality mobile experiences
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">
+                            Greg — Plant Identifier &amp; Care
+                            <span class="acq">(greg.app)</span>
+                        </div>
+                        <div class="period">Aug 2021 – Feb 2023</div>
+                        <div class="role">
+                            Lead Software Engineer, iOS · Austin, TX (remote)
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Led iOS engineering across many App Store
+                                    releases; hands-on development on all major
+                                    features
+                                </li>
+                                <li>
+                                    Mentored engineers and worked closely with
+                                    everyone across the company
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">
+                            Swift · SwiftUI · Combine · UIKit · Core ML · Vision
+                            · StoreKit
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">Facebook</div>
+                        <div class="period">Oct 2020 – Jul 2021</div>
+                        <div class="role">
+                            Staff Software Engineer, Mobile — Messenger ·
+                            Austin, TX (remote)
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Tech Lead for Messenger Search (iOS) and
+                                    Instagram Direct Search (Android) clients
+                                </li>
+                                <li>
+                                    Mentored junior engineers; worked with
+                                    cross-functional teams on engineering and
+                                    product planning
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">
+                            Objective-C · Java · C/C++ · SQL · GraphQL · Hack ·
+                            Buck
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">Google</div>
+                        <div class="period">Sep 2019 – Sep 2020</div>
+                        <div class="role">
+                            Senior Software Engineer, Android — Google Mobile
+                            Services (GMS) · Austin, TX
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Supported teams across Google developing
+                                    Android APIs for GMS
+                                </li>
+                                <li>
+                                    Developed and maintained GMS build/test
+                                    infrastructure and data analysis pipelines;
+                                    fixed GMS core bugs
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">Android · Java · Flume · Blaze</div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">Facebook</div>
+                        <div class="period">Aug 2017 – Sep 2019</div>
+                        <div class="role">
+                            Staff Software Engineer, iOS — Messenger · Menlo
+                            Park, CA
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Tech Lead on Messenger iOS — led feature and
+                                    infra work for the Messenger LightSpeed iOS
+                                    launch (complete rewrite of Facebook
+                                    Messenger)
+                                </li>
+                                <li>
+                                    Lead iOS engineer on Youth/Messenger Teens —
+                                    defined, built and deployed many
+                                    public-facing features
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">
+                            Objective-C · C/C++ · GraphQL · Hack · Buck
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">
+                            Cape
+                            <span class="acq"
+                                >(acquired by Motorola Solutions)</span
+                            >
+                        </div>
+                        <div class="period">Oct 2016 – Aug 2017</div>
+                        <div class="role">
+                            Mobile Tech Lead, iOS &amp; Android · Redwood City,
+                            CA
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Owned development of "Cape Operator" drone
+                                    control app — real-time video streaming via
+                                    WebRTC, UAV flight control, DJI SDK
+                                </li>
+                                <li>
+                                    Mobile architect and lead developer for
+                                    consumer-facing "Cape Spectator" app on iOS
+                                    and Android
+                                </li>
+                                <li>
+                                    Holds 2 patents related to operation of
+                                    remote unmanned aerial vehicles
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">
+                            Swift · Objective-C · Java · WebRTC · DJI SDK
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">Tableau Software</div>
+                        <div class="period">
+                            Jun 2014 – Sep 2015 &amp; Mar – Oct 2016
+                        </div>
+                        <div class="role">
+                            Lead Software Engineer / Development Manager —
+                            Vizable · Palo Alto, CA
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Defined overall architecture across all app
+                                    layers: column-oriented database, data
+                                    import pipeline, commands infrastructure, UI
+                                    and animation framework
+                                </li>
+                                <li>
+                                    Grew team (dev, UX, QA, PM) from 3 to 17
+                                    people through internal and external hires
+                                </li>
+                                <li>
+                                    Lead developer through v1 launch; managed 11
+                                    developers over several post-launch releases
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tech">Swift · Objective-C · C++</div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">VMware</div>
+                        <div class="period">Jan 2012 – Jun 2014</div>
+                        <div class="role">
+                            Architect &amp; Lead Developer / Development
+                            Manager, Mobile · Palo Alto, CA
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Built several public and internal Android
+                                    and iOS apps
+                                </li>
+                                <li>
+                                    Established and ran mobile app development
+                                    teams; owned business engagement, roadmaps,
+                                    and architecture
+                                </li>
+                                <li>
+                                    Mobile architect and technical lead for
+                                    AirWatch MDM rollout and other
+                                    implementation projects
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="grid-column: 1 / -1">
+                        <div class="section-divider">Earlier Career</div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">Zeebu Mobile</div>
+                        <div class="period">Jul 2009 – Dec 2011</div>
+                        <div class="role">
+                            Founder &amp; CTO · Ottawa, Canada
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Lead developer and designer for over a dozen
+                                    award-winning kids' apps with several
+                                    million downloads across BlackBerry,
+                                    Android, iPhone, iPad, and BlackBerry
+                                    PlayBook
+                                </li>
+                                <li>
+                                    Handled fundraising, hiring, design, sales,
+                                    marketing, and finance
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">
+                            Rove Mobile
+                            <span class="acq">(acquired by SolarWinds)</span>
+                        </div>
+                        <div class="period">Feb 2001 – Nov 2008</div>
+                        <div class="role">
+                            Founder &amp; Lead Developer → VP Operations ·
+                            Ottawa, Canada
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Lead developer for Mobile Admin and Mobile
+                                    SSH — flagship IT management products for
+                                    iOS, Android, BlackBerry, and J2ME
+                                </li>
+                                <li>
+                                    Grew the company to 40+ employees over 7
+                                    years while remaining profitable
+                                </li>
+                                <li>
+                                    As VP Operations: responsible for most of
+                                    the company outside of sales and marketing
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">bitHeads</div>
+                        <div class="period">2007 &amp; 2008–2009</div>
+                        <div class="role">
+                            Mobile Software Developer · Ottawa, Canada
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Led various client mobile projects with a
+                                    focus on BlackBerry — networking, UI, and
+                                    hardware integration
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="exp-item">
+                        <div class="company">TrueContext</div>
+                        <div class="period">Sep 2006 – Sep 2007</div>
+                        <div class="role">
+                            BlackBerry Team Lead &amp; Project Manager
+                            (consultant) · Ottawa, Canada
+                        </div>
+                        <div class="desc">
+                            <ul>
+                                <li>
+                                    Led BlackBerry development team and owned
+                                    project delivery as a consultant
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Skills -->
+            <section>
+                <h2>Skills</h2>
+                <div class="skills-grid">
+                    <span class="skill-tag">iOS</span>
+                    <span class="skill-tag">Swift</span>
+                    <span class="skill-tag">SwiftUI</span>
+                    <span class="skill-tag">Objective-C</span>
+                    <span class="skill-tag">UIKit</span>
+                    <span class="skill-tag">Combine</span>
+                    <span class="skill-tag">Core ML</span>
+                    <span class="skill-tag">StoreKit</span>
+                    <span class="skill-tag">Android</span>
+                    <span class="skill-tag">Java</span>
+                    <span class="skill-tag">C/C++</span>
+                    <span class="skill-tag">WebRTC</span>
+                    <span class="skill-tag">GraphQL</span>
+                    <span class="skill-tag">BlackBerry</span>
+                    <span class="skill-tag">Mobile Architecture</span>
+                    <span class="skill-tag">Team Leadership</span>
+                    <span class="skill-tag">Founding &amp; Startups</span>
+                </div>
+            </section>
+
+            <!-- Publications -->
+            <section>
+                <h2>Publications</h2>
+                <div class="pub-item">
+                    <div class="title">Beginning BlackBerry Development</div>
+                    <div class="pub-year">2009 &amp; 2011</div>
+                    <div class="publisher">Apress</div>
+                    <div class="pub-note">
+                        All-time best-selling BlackBerry development book · 4/5
+                        stars on Amazon
+                    </div>
+                </div>
+            </section>
+
+            <!-- Education -->
+            <section>
+                <h2>Education</h2>
+                <div class="edu-item">
+                    <div class="company">University of Waterloo</div>
+                    <div class="period">2000</div>
+                    <div class="role">
+                        Honours Bachelor of Mathematics (Mathematical Sciences)
+                    </div>
+                </div>
+            </section>
+
+            <footer>
+                <div class="footer-ornament">
+                    <span class="leaf sm"></span>
+                    <span style="font-size: 0.65rem; letter-spacing: 2px"
+                        >✦ ✦ ✦</span
+                    >
+                    <span class="leaf sm r"></span>
+                </div>
+                <p>
+                    &copy; 2026 Anthony Rizk &nbsp;·&nbsp;
+                    <a href="mailto:anthony.rizk@gmail.com"
+                        >anthony.rizk@gmail.com</a
+                    >
+                </p>
+            </footer>
         </div>
-
-        <div class="exp-item">
-          <div class="company">Greg — Plant Identifier &amp; Care <span class="acq">(greg.app)</span></div>
-          <div class="period">Aug 2021 – Feb 2023</div>
-          <div class="role">Lead Software Engineer, iOS · Austin, TX (remote)</div>
-          <div class="desc">
-            <ul>
-              <li>Led iOS engineering across many App Store releases; hands-on development on all major features</li>
-              <li>Mentored engineers and worked closely with everyone across the company</li>
-            </ul>
-          </div>
-          <div class="tech">Swift · SwiftUI · Combine · UIKit · Core ML · Vision · StoreKit</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Facebook</div>
-          <div class="period">Oct 2020 – Jul 2021</div>
-          <div class="role">Staff Software Engineer, Mobile — Messenger · Austin, TX (remote)</div>
-          <div class="desc">
-            <ul>
-              <li>Tech Lead for Messenger Search (iOS) and Instagram Direct Search (Android) clients</li>
-              <li>Mentored junior engineers; worked with cross-functional teams on planning and product</li>
-            </ul>
-          </div>
-          <div class="tech">Objective-C · Java · C/C++ · SQL · GraphQL · Hack · Buck</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Google</div>
-          <div class="period">Sep 2019 – Sep 2020</div>
-          <div class="role">Senior Software Engineer, Android — Google Mobile Services (GMS) · Austin, TX</div>
-          <div class="desc">
-            <ul>
-              <li>Supported teams across Google developing Android APIs for GMS</li>
-              <li>Developed and maintained GMS build/test infrastructure and data analysis pipelines; fixed GMS core bugs</li>
-            </ul>
-          </div>
-          <div class="tech">Android · Java · Flume · Blaze</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Facebook</div>
-          <div class="period">Aug 2017 – Sep 2019</div>
-          <div class="role">Staff Software Engineer, iOS — Messenger · Menlo Park, CA</div>
-          <div class="desc">
-            <ul>
-              <li>Tech Lead on Messenger iOS — led feature and infra work for the Messenger LightSpeed iOS launch (complete rewrite of Facebook Messenger)</li>
-              <li>Lead iOS engineer on Youth/Messenger Teens — defined, built and deployed many public-facing features</li>
-            </ul>
-          </div>
-          <div class="tech">Objective-C · C/C++ · GraphQL · Hack · Buck</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Cape <span class="acq">(acquired by Motorola Solutions)</span></div>
-          <div class="period">Oct 2016 – Aug 2017</div>
-          <div class="role">Mobile Tech Lead, iOS &amp; Android · Redwood City, CA</div>
-          <div class="desc">
-            <ul>
-              <li>Owned development of "Cape Operator" drone control app — real-time video streaming via WebRTC, UAV flight control, DJI SDK</li>
-              <li>Mobile architect and lead developer for consumer-facing "Cape Spectator" app on iOS and Android</li>
-              <li>Holds 2 patents related to operation of remote unmanned aerial vehicles</li>
-            </ul>
-          </div>
-          <div class="tech">Swift · Objective-C · Java · WebRTC · DJI SDK</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Tableau Software</div>
-          <div class="period">Jun 2014 – Sep 2015 &amp; Mar – Oct 2016</div>
-          <div class="role">Lead Software Engineer / Development Manager — Vizable · Palo Alto, CA</div>
-          <div class="desc">
-            <ul>
-              <li>Defined overall architecture across all app layers: column-oriented database, data import pipeline, commands infrastructure, UI and animation framework</li>
-              <li>Grew team (dev, UX, QA, PM) from 3 to 17 people through internal and external hires</li>
-              <li>Lead developer through v1 launch; managed 11 developers over several post-launch releases</li>
-            </ul>
-          </div>
-          <div class="tech">Swift · Objective-C · C++</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">VMware</div>
-          <div class="period">Jan 2012 – Jun 2014</div>
-          <div class="role">Architect &amp; Lead Developer / Development Manager, Mobile · Palo Alto, CA</div>
-          <div class="desc">
-            <ul>
-              <li>Built several public and internal Android and iOS apps</li>
-              <li>Established and ran mobile app development teams; owned business engagement, roadmaps, and architecture</li>
-              <li>Mobile architect and technical lead for AirWatch MDM rollout and other implementation projects</li>
-            </ul>
-          </div>
-        </div>
-
-        <div style="grid-column: 1 / -1;">
-          <div class="section-divider">Earlier Career</div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Zeebu Mobile</div>
-          <div class="period">Jul 2009 – Dec 2011</div>
-          <div class="role">Founder &amp; CTO · Ottawa, Canada</div>
-          <div class="desc">
-            <ul>
-              <li>Lead developer and designer for over a dozen award-winning kids' apps with several million downloads across BlackBerry, Android, iPhone, iPad, and BlackBerry PlayBook</li>
-              <li>Handled fundraising, hiring, design, sales, marketing, and finance</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">Rove Mobile <span class="acq">(acquired by SolarWinds)</span></div>
-          <div class="period">Feb 2001 – Nov 2008</div>
-          <div class="role">Founder &amp; Lead Developer → VP Operations · Ottawa, Canada</div>
-          <div class="desc">
-            <ul>
-              <li>Lead developer for Mobile Admin and Mobile SSH — flagship IT management products for iOS, Android, BlackBerry, and J2ME</li>
-              <li>Grew the company to 40+ employees over 7 years while remaining profitable</li>
-              <li>As VP Operations: responsible for most of the company outside of sales and marketing</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">bitHeads</div>
-          <div class="period">2007 &amp; 2008–2009</div>
-          <div class="role">Mobile Software Developer · Ottawa, Canada</div>
-          <div class="desc">
-            <ul>
-              <li>Led various client mobile projects with a focus on BlackBerry — networking, UI, and hardware integration</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="exp-item">
-          <div class="company">TrueContext</div>
-          <div class="period">Sep 2006 – Sep 2007</div>
-          <div class="role">BlackBerry Team Lead &amp; Project Manager (consultant) · Ottawa, Canada</div>
-          <div class="desc">
-            <ul>
-              <li>Led BlackBerry development team and owned project delivery as a consultant</li>
-            </ul>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Skills -->
-    <section>
-      <h2>Skills</h2>
-      <div class="skills-grid">
-        <span class="skill-tag">iOS</span>
-        <span class="skill-tag">Swift</span>
-        <span class="skill-tag">SwiftUI</span>
-        <span class="skill-tag">Objective-C</span>
-        <span class="skill-tag">UIKit</span>
-        <span class="skill-tag">Combine</span>
-        <span class="skill-tag">Core ML</span>
-        <span class="skill-tag">StoreKit</span>
-        <span class="skill-tag">Android</span>
-        <span class="skill-tag">Java</span>
-        <span class="skill-tag">C/C++</span>
-        <span class="skill-tag">WebRTC</span>
-        <span class="skill-tag">GraphQL</span>
-        <span class="skill-tag">BlackBerry</span>
-        <span class="skill-tag">Mobile Architecture</span>
-        <span class="skill-tag">Team Leadership</span>
-        <span class="skill-tag">Founding &amp; Startups</span>
-      </div>
-    </section>
-
-    <!-- Publications -->
-    <section>
-      <h2>Publications</h2>
-      <div class="pub-item">
-        <div class="title">Beginning BlackBerry Development</div>
-        <div class="pub-year">2009 &amp; 2011</div>
-        <div class="publisher">Apress</div>
-        <div class="pub-note">All-time best-selling BlackBerry development book · 4/5 stars on Amazon</div>
-      </div>
-    </section>
-
-    <!-- Education -->
-    <section>
-      <h2>Education</h2>
-      <div class="edu-item">
-        <div class="company">University of Waterloo</div>
-        <div class="period">2000</div>
-        <div class="role">Honours Bachelor of Mathematics (Mathematical Sciences)</div>
-      </div>
-    </section>
-
-    <footer>
-      <div class="footer-ornament">
-        <span class="leaf sm"></span>
-        <span style="font-size:0.65rem; letter-spacing:2px;">✦ ✦ ✦</span>
-        <span class="leaf sm r"></span>
-      </div>
-      <p>&copy; 2026 Anthony Rizk &nbsp;·&nbsp; <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a></p>
-    </footer>
-
-  </div>
-</body>
+    </body>
 </html>
