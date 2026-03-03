@@ -676,6 +676,228 @@
                     display: none;
                 }
             }
+
+            @media print {
+                * {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+
+                body {
+                    background: white !important;
+                    background-image: none !important;
+                    color: #111827;
+                    font-size: 9.5pt;
+                    line-height: 1.5;
+                }
+
+                a {
+                    color: #1d4ed8;
+                    text-decoration: none;
+                }
+
+                /* ── Header ── */
+                header {
+                    padding: 18pt 0 12pt;
+                }
+
+                header::before {
+                    background: #7aa2f7;
+                    height: 2px;
+                }
+
+                .nameplate {
+                    background: white !important;
+                    border: none !important;
+                    border-radius: 0 !important;
+                    box-shadow: none !important;
+                    padding: 0;
+                    text-align: left;
+                    max-width: 100%;
+                }
+
+                .nameplate .eyebrow {
+                    color: #6b7280;
+                    letter-spacing: 2px;
+                    font-size: 7pt;
+                    margin-bottom: 4pt;
+                }
+
+                .nameplate h1 {
+                    font-size: 22pt;
+                    letter-spacing: -0.5px;
+                    line-height: 1.1;
+                    background: none !important;
+                    -webkit-text-fill-color: #111827 !important;
+                    color: #111827 !important;
+                }
+
+                .nameplate .subtitle {
+                    font-size: 9pt;
+                    color: #4b5563;
+                    margin-top: 4pt;
+                }
+
+                .headline-tags {
+                    justify-content: flex-start;
+                    margin-top: 6pt;
+                    gap: 6pt;
+                }
+
+                .headline-tags span {
+                    color: #1d4ed8;
+                    border-color: #bfdbfe;
+                    background: #eff6ff;
+                    font-size: 6.5pt;
+                    border-radius: 3px;
+                    padding: 2pt 7pt;
+                }
+
+                /* Hide decorative / interactive elements */
+                .ornament,
+                .leaf,
+                .footer-ornament,
+                .links,
+                footer,
+                body::after {
+                    display: none !important;
+                }
+
+                /* ── Sections ── */
+                section {
+                    padding: 10pt 0;
+                }
+
+                section + section {
+                    border-top: 1px solid #e5e7eb;
+                }
+
+                section h2 {
+                    color: #6b7280;
+                    font-size: 6.5pt;
+                    letter-spacing: 2.5px;
+                    margin-bottom: 8pt;
+                    gap: 8pt;
+                }
+
+                section h2::before {
+                    background: #7aa2f7;
+                    height: 10px;
+                }
+
+                section h2::after {
+                    background: linear-gradient(to right, #e5e7eb, transparent);
+                }
+
+                /* ── About ── */
+                .about p {
+                    color: #374151;
+                    font-size: 9pt;
+                }
+
+                .about p::first-letter {
+                    color: #1d4ed8;
+                    font-size: 2rem;
+                }
+
+                /* ── Experience ── */
+                .exp-item {
+                    padding: 8pt 0;
+                    border-bottom: 1px solid #f3f4f6;
+                    page-break-inside: avoid;
+                }
+
+                .exp-item::before {
+                    border-color: #7aa2f7;
+                    background: white;
+                    box-shadow: none;
+                }
+
+                .exp-item .company {
+                    color: #111827;
+                    font-size: 9.5pt;
+                }
+
+                .exp-item .acq,
+                .exp-item .role {
+                    color: #6b7280;
+                    font-size: 8.5pt;
+                }
+
+                .exp-item .period {
+                    color: #d97706;
+                    font-size: 8pt;
+                }
+
+                .exp-item .desc {
+                    color: #374151;
+                    font-size: 8.5pt;
+                    margin-top: 5pt;
+                }
+
+                .exp-item .desc ul li::before {
+                    color: #3b82f6;
+                }
+
+                .exp-item .tech {
+                    color: #7c3aed;
+                    opacity: 1;
+                    font-size: 7.5pt;
+                }
+
+                .section-divider {
+                    color: #9ca3af;
+                    font-size: 6.5pt;
+                }
+
+                .section-divider::before,
+                .section-divider::after {
+                    background: #e5e7eb;
+                }
+
+                /* ── Skills ── */
+                .skill-tag {
+                    background: #f9fafb !important;
+                    border-color: #e5e7eb !important;
+                    color: #374151 !important;
+                    font-size: 7.5pt;
+                    border-radius: 3px;
+                }
+
+                /* ── Publication ── */
+                .pub-item {
+                    background: #fffbeb !important;
+                    border-color: #fde68a !important;
+                    border-left-color: #d97706 !important;
+                    border-radius: 4px;
+                }
+
+                .pub-item .title {
+                    color: #111827;
+                }
+
+                .pub-item .publisher,
+                .pub-item .pub-note {
+                    color: #6b7280;
+                }
+
+                .pub-item .pub-year {
+                    color: #d97706;
+                }
+
+                /* ── Education ── */
+                .edu-item .company {
+                    color: #111827;
+                }
+
+                .edu-item .role {
+                    color: #6b7280;
+                }
+
+                .edu-item .period {
+                    color: #d97706;
+                }
+            }
         </style>
     </head>
     <body>
@@ -907,13 +1129,13 @@
                     </div>
 
                     <div class="exp-item">
-                        <div class="company">Tableau Software</div>
+                        <div class="company">Tableau</div>
                         <div class="period">
                             Jun 2014 – Sep 2015 &amp; Mar – Oct 2016
                         </div>
                         <div class="role">
                             Lead Software Engineer / Development Manager —
-                            Vizable · Palo Alto, CA
+                            Vizable (0→1) · Palo Alto, CA
                         </div>
                         <div class="desc">
                             <ul>
@@ -1040,14 +1262,13 @@
                         <div class="company">TrueContext</div>
                         <div class="period">Sep 2006 – Sep 2007</div>
                         <div class="role">
-                            BlackBerry Team Lead &amp; Project Manager
-                            (consultant) · Ottawa, Canada
+                            BlackBerry Team Lead &amp; Project Manager · Ottawa, Canada
                         </div>
                         <div class="desc">
                             <ul>
                                 <li>
                                     Led BlackBerry development team and owned
-                                    project delivery as a consultant
+                                    project delivery
                                 </li>
                             </ul>
                         </div>
