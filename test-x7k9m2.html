@@ -24,7 +24,7 @@
                 padding: 24px;
             }
             .card {
-                width: 100%; max-width: 520px;
+                width: 100%; max-width: 560px;
                 background: var(--bg-card); border: 1px solid var(--border);
                 border-radius: 14px; padding: 32px;
                 box-shadow: 0 24px 48px rgba(0,0,0,0.4);
@@ -38,72 +38,215 @@
             .sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px; }
             label { font-size: 0.78rem; color: var(--text-mid); display: block; margin-bottom: 6px; }
             textarea {
-                width: 100%; min-height: 100px; resize: vertical;
+                width: 100%; min-height: 90px; resize: vertical;
                 background: var(--bg); color: var(--text); border: 1px solid var(--border-mid);
                 border-radius: 8px; padding: 12px; font-family: inherit; font-size: 0.9rem;
                 outline: none; transition: border-color 0.2s;
             }
             textarea:focus { border-color: var(--blue); }
+            .row { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
             button {
-                margin-top: 16px; padding: 10px 28px; border-radius: 8px;
+                padding: 10px 28px; border-radius: 8px;
                 font-family: inherit; font-size: 0.82rem; font-weight: 500;
                 background: linear-gradient(135deg, rgba(122,162,247,0.18), rgba(187,154,247,0.18));
                 border: 1px solid var(--border-mid); color: var(--blue); cursor: pointer;
                 transition: all 0.2s;
             }
-            button:hover { border-color: var(--blue); background: rgba(122,162,247,0.28); }
+            button:hover:not(:disabled) { border-color: var(--blue); background: rgba(122,162,247,0.28); }
             button:disabled { opacity: 0.5; cursor: not-allowed; }
-            #result {
-                margin-top: 16px; padding: 12px; border-radius: 8px;
-                font-size: 0.82rem; white-space: pre-wrap; word-break: break-word;
+            #stop { color: #f77; display: none; }
+            #status { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
+            #answer {
+                margin-top: 16px; padding: 14px; border-radius: 8px;
+                background: rgba(115,218,202,0.06); border: 1px solid rgba(115,218,202,0.18);
+                font-size: 0.88rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
                 display: none;
             }
-            #result.ok { display: block; background: rgba(115,218,202,0.1); border: 1px solid rgba(115,218,202,0.25); color: var(--teal); }
-            #result.err { display: block; background: rgba(255,100,100,0.08); border: 1px solid rgba(255,100,100,0.25); color: #f77; }
+            #answer.streaming { border-color: var(--teal); }
+            #answer.err {
+                background: rgba(255,100,100,0.08); border-color: rgba(255,100,100,0.25); color: #f77;
+            }
+            details { margin-top: 16px; font-size: 0.75rem; color: var(--text-muted); }
+            summary { cursor: pointer; }
+            #frames {
+                margin-top: 8px; max-height: 180px; overflow: auto;
+                background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+                padding: 10px; font-family: ui-monospace, monospace; font-size: 0.72rem;
+                white-space: pre-wrap; word-break: break-all;
+            }
         </style>
     </head>
     <body>
         <div class="card">
             <h1>Ask Test</h1>
-            <p class="sub">POSTs JSON to ask.anthonyrizk.me</p>
+            <p class="sub">Streams SSE from ask.anthonyrizk.me — dev harness for the /ask endpoint.</p>
 
             <label for="q">Question</label>
             <textarea id="q" placeholder="Type a question…"></textarea>
-            <button id="btn" onclick="send()">Send</button>
-            <div id="result"></div>
+
+            <!-- Rendered explicitly from JS so we can keep the widget id and
+                 reset it between questions. Turnstile tokens are single-use:
+                 without a reset, only the first question would verify. -->
+            <div id="turnstile"></div>
+
+            <div class="row">
+                <button id="btn">Send</button>
+                <button id="stop">Stop</button>
+                <span id="status"></span>
+            </div>
+
+            <div id="answer"></div>
+
+            <details>
+                <summary>Raw SSE frames</summary>
+                <div id="frames"></div>
+            </details>
         </div>
 
+        <script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
+            async
+            defer
+        ></script>
         <script>
             const ENDPOINT = "https://ask.anthonyrizk.me/ask";
+            const SITEKEY = "0x4AAAAAAEnfXIBT6gmKFYih"; // public by design
+
+            // --- Turnstile ---------------------------------------------------
+            // A token is redeemed exactly once at siteverify, so each question
+            // needs a fresh one. We render explicitly, keep the widget id, and
+            // reset after every attempt.
+            let widgetId = null;
+
+            function onTurnstileLoad() {
+                widgetId = window.turnstile.render("#turnstile", {
+                    sitekey: SITEKEY,
+                    action: "ask", // server checks this matches
+                });
+            }
+            window.onTurnstileLoad = onTurnstileLoad;
+
+            /** Current token, or "" if the widget hasn't solved yet. */
+            function turnstileToken() {
+                return widgetId === null ? "" : window.turnstile.getResponse(widgetId) || "";
+            }
+
+            function resetTurnstile() {
+                if (widgetId !== null) window.turnstile.reset(widgetId);
+            }
+
+            const q = document.getElementById("q");
+            const btn = document.getElementById("btn");
+            const stopBtn = document.getElementById("stop");
+            const status = document.getElementById("status");
+            const answer = document.getElementById("answer");
+            const frames = document.getElementById("frames");
+
+            let ac = null; // AbortController for the in-flight request, if any
+
+            function setState(busy) {
+                btn.disabled = busy;
+                stopBtn.style.display = busy ? "" : "none";
+                if (!busy) ac = null;
+            }
+
+            function fail(msg) {
+                answer.className = "err";
+                answer.style.display = "block";
+                answer.textContent = msg;
+                status.textContent = "";
+            }
 
             async function send() {
-                const btn = document.getElementById("btn");
-                const q = document.getElementById("q").value.trim();
-                const out = document.getElementById("result");
+                const question = q.value.trim();
+                if (!question) { fail("Enter a question first."); return; }
 
-                if (!q) { out.className = "err"; out.textContent = "Enter a question first."; return; }
+                // Managed mode is usually invisible, but on a suspicious signal
+                // it shows a challenge — until that's solved there's no token.
+                const token = turnstileToken();
+                if (!token) { fail("Verification not ready — complete the check above, then send."); return; }
 
-                btn.disabled = true;
-                out.className = ""; out.style.display = "none";
+                ac = new AbortController();
+                setState(true);
+                answer.className = "streaming";
+                answer.style.display = "block";
+                answer.textContent = "";
+                frames.textContent = "";
+
+                const t0 = performance.now();
+                let chars = 0;
+                status.textContent = "connecting…";
 
                 try {
                     const res = await fetch(ENDPOINT, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question: q }),
+                        body: JSON.stringify({ question, turnstileToken: token }),
+                        signal: ac.signal,
                     });
-                    const text = await res.text();
-                    out.className = res.ok ? "ok" : "err";
-                    out.textContent = `[${res.status}] ${text}`;
+
+                    if (!res.ok || !res.body) {
+                        fail(`[${res.status}] ${await res.text()}`);
+                        return;
+                    }
+
+                    // Parse SSE: events are separated by blank lines; each
+                    // event's payload is its "data:" line(s), JSON-encoded.
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buf = "";
+
+                    for (;;) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buf += decoder.decode(value, { stream: true });
+
+                        let idx;
+                        while ((idx = buf.indexOf("\n\n")) !== -1) {
+                            const raw = buf.slice(0, idx);
+                            buf = buf.slice(idx + 2);
+                            const data = raw.split("\n")
+                                .filter((l) => l.startsWith("data:"))
+                                .map((l) => l.slice(5).trimStart())
+                                .join("\n");
+                            if (!data) continue;
+
+                            frames.textContent += data + "\n";
+                            frames.scrollTop = frames.scrollHeight;
+
+                            const msg = JSON.parse(data);
+                            if (msg.error) { fail(msg.error); return; }
+                            if (msg.text) {
+                                answer.textContent += msg.text;
+                                chars += msg.text.length;
+                                status.textContent =
+                                    `streaming… ${chars} chars, ${((performance.now() - t0) / 1000).toFixed(1)}s`;
+                            }
+                            if (msg.done) {
+                                answer.className = "";
+                                status.textContent =
+                                    `done — ${chars} chars in ${((performance.now() - t0) / 1000).toFixed(1)}s`;
+                            }
+                        }
+                    }
                 } catch (e) {
-                    out.className = "err";
-                    out.textContent = `Error: ${e.message}`;
+                    if (e.name === "AbortError") {
+                        answer.className = "";
+                        status.textContent = `stopped after ${((performance.now() - t0) / 1000).toFixed(1)}s (server stops billing here)`;
+                    } else {
+                        fail(`Error: ${e.message}`);
+                    }
                 } finally {
-                    btn.disabled = false;
+                    // The token is redeemed (or burnt) either way — get a fresh
+                    // one so the next question can verify.
+                    resetTurnstile();
+                    setState(false);
                 }
             }
 
-            document.getElementById("q").addEventListener("keydown", (e) => {
+            btn.addEventListener("click", send);
+            stopBtn.addEventListener("click", () => ac?.abort());
+            q.addEventListener("keydown", (e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
             });
         </script>
