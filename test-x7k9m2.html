@@ -84,10 +84,11 @@
             <label for="q">Question</label>
             <textarea id="q" placeholder="Type a question…"></textarea>
 
-            <!-- Rendered explicitly from JS so we can keep the widget id and
-                 reset it between questions. Turnstile tokens are single-use:
-                 without a reset, only the first question would verify. -->
-            <div id="turnstile"></div>
+            <!-- Implicit render: api.js finds this by class and manages the
+                 widget itself. With a single widget on the page, getResponse()
+                 and reset() need no widget id. Tokens are single-use, so we
+                 reset after every attempt. -->
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAEnfXIBT6gmKFYih" data-action="ask"></div>
 
             <div class="row">
                 <button id="btn">Send</button>
@@ -103,40 +104,17 @@
             </details>
         </div>
 
-        <!-- Turnstile bootstrap MUST come before api.js loads. The script is
-             async, so if the callback isn't already on window when it runs,
-             it never fires and window.turnstile stays uninitialised. -->
-        <script>
-            const SITEKEY = "0x4AAAAAAEnfXIBT6gmKFYih"; // public by design
-
-            // A token is redeemed exactly once at siteverify, so each question
-            // needs a fresh one. Render explicitly, keep the widget id, reset
-            // after every attempt.
-            let widgetId = null;
-
-            window.onTurnstileLoad = function () {
-                widgetId = window.turnstile.render("#turnstile", {
-                    sitekey: SITEKEY,
-                    action: "ask", // server checks this matches
-                });
-            };
-        </script>
-        <script
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
-            async
-            defer
-        ></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         <script>
             const ENDPOINT = "https://ask.anthonyrizk.me/ask";
 
             /** Current token, or "" if the widget isn't ready / hasn't solved. */
             function turnstileToken() {
-                if (widgetId === null || !window.turnstile) return "";
-                return window.turnstile.getResponse(widgetId) || "";
+                return window.turnstile ? window.turnstile.getResponse() || "" : "";
             }
 
             function resetTurnstile() {
-                if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);
+                if (window.turnstile) window.turnstile.reset();
             }
 
             const q = document.getElementById("q");
@@ -167,7 +145,7 @@
 
                 // Managed mode is usually invisible, but on a suspicious signal
                 // it shows a challenge — until that's solved there's no token.
-                if (!window.turnstile || widgetId === null) {
+                if (!window.turnstile) {
                     fail("Turnstile failed to load (blocked script, or challenges.cloudflare.com unreachable). Check the console.");
                     return;
                 }
