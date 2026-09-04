@@ -103,6 +103,24 @@
             </details>
         </div>
 
+        <!-- Turnstile bootstrap MUST come before api.js loads. The script is
+             async, so if the callback isn't already on window when it runs,
+             it never fires and window.turnstile stays uninitialised. -->
+        <script>
+            const SITEKEY = "0x4AAAAAAEnfXIBT6gmKFYih"; // public by design
+
+            // A token is redeemed exactly once at siteverify, so each question
+            // needs a fresh one. Render explicitly, keep the widget id, reset
+            // after every attempt.
+            let widgetId = null;
+
+            window.onTurnstileLoad = function () {
+                widgetId = window.turnstile.render("#turnstile", {
+                    sitekey: SITEKEY,
+                    action: "ask", // server checks this matches
+                });
+            };
+        </script>
         <script
             src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
             async
@@ -110,29 +128,15 @@
         ></script>
         <script>
             const ENDPOINT = "https://ask.anthonyrizk.me/ask";
-            const SITEKEY = "0x4AAAAAAEnfXIBT6gmKFYih"; // public by design
 
-            // --- Turnstile ---------------------------------------------------
-            // A token is redeemed exactly once at siteverify, so each question
-            // needs a fresh one. We render explicitly, keep the widget id, and
-            // reset after every attempt.
-            let widgetId = null;
-
-            function onTurnstileLoad() {
-                widgetId = window.turnstile.render("#turnstile", {
-                    sitekey: SITEKEY,
-                    action: "ask", // server checks this matches
-                });
-            }
-            window.onTurnstileLoad = onTurnstileLoad;
-
-            /** Current token, or "" if the widget hasn't solved yet. */
+            /** Current token, or "" if the widget isn't ready / hasn't solved. */
             function turnstileToken() {
-                return widgetId === null ? "" : window.turnstile.getResponse(widgetId) || "";
+                if (widgetId === null || !window.turnstile) return "";
+                return window.turnstile.getResponse(widgetId) || "";
             }
 
             function resetTurnstile() {
-                if (widgetId !== null) window.turnstile.reset(widgetId);
+                if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);
             }
 
             const q = document.getElementById("q");
@@ -163,8 +167,12 @@
 
                 // Managed mode is usually invisible, but on a suspicious signal
                 // it shows a challenge — until that's solved there's no token.
+                if (!window.turnstile || widgetId === null) {
+                    fail("Turnstile failed to load (blocked script, or challenges.cloudflare.com unreachable). Check the console.");
+                    return;
+                }
                 const token = turnstileToken();
-                if (!token) { fail("Verification not ready — complete the check above, then send."); return; }
+                if (!token) { fail("Verification still running — wait a moment, or complete the challenge above, then send."); return; }
 
                 ac = new AbortController();
                 setState(true);
