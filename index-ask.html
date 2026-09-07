@@ -1030,12 +1030,26 @@
                 margin: 11px 0 0;
                 line-height: 1.5;
             }
-            /* reserved: the widget paints for some visitors only */
+            /* Collapsed until Turnstile says it needs a click. With deferred
+               execution most visitors never open this at all, so reserving
+               65px permanently would be an empty box on every visit. The
+               transition makes the rare expansion read as intentional. */
             .ask-turnstile {
-                min-height: 65px;
                 display: flex;
                 align-items: center;
-                margin-top: 12px;
+                max-height: 0;
+                overflow: hidden;
+                opacity: 0;
+                transition: max-height 0.25s ease, opacity 0.25s ease, margin-top 0.25s ease;
+                margin-top: 0;
+            }
+            .ask-turnstile.is-open {
+                max-height: 90px;
+                opacity: 1;
+                margin-top: 14px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .ask-turnstile { transition: none; }
             }
             @media (max-width: 600px) {
                 .ask-form { flex-direction: column; }
@@ -1488,7 +1502,19 @@
                     tell you when something isn't covered.
                 </p>
 
-                <div class="ask-turnstile"><div class="cf-turnstile" data-sitekey="0x4AAAAAAEnfXIBT6gmKFYih" data-action="ask"></div></div>
+                <div class="ask-turnstile" id="ask-turnstile-wrap">
+                    <div
+                        class="cf-turnstile"
+                        id="ask-turnstile"
+                        data-sitekey="0x4AAAAAAEnfXIBT6gmKFYih"
+                        data-action="ask"
+                        data-execution="execute"
+                        data-callback="askTurnstileToken"
+                        data-error-callback="askTurnstileError"
+                        data-before-interactive-callback="askTurnstileShow"
+                        data-after-interactive-callback="askTurnstileHide"
+                    ></div>
+                </div>
             </section>
 
             <!-- Skills -->
@@ -1564,7 +1590,8 @@
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         <script>
             (function () {
-                const ENDPOINT = "https://ask.anthonyrizk.me/ask";
+                const ASK_URL = "https://ask.anthonyrizk.me/ask";
+                const SESSION_URL = "https://ask.anthonyrizk.me/session";
 
                 const form = document.getElementById("ask-form");
                 const input = document.getElementById("ask-input");
@@ -1577,11 +1604,56 @@
                     answer.textContent = text;
                 }
 
-                // Turnstile tokens are single-use, so each question needs a fresh
-                // one. Implicit render owns the widget; with one on the page,
-                // getResponse/reset take no arguments.
-                function token() {
-                    return window.turnstile ? window.turnstile.getResponse() || "" : "";
+                // --- verification -------------------------------------------
+                // One challenge per visit, not per question. Turnstile runs on
+                // demand (data-execution="execute"), we trade the token for a
+                // short-lived session token, and every later question uses that.
+                const wrap = document.getElementById("ask-turnstile-wrap");
+                let session = null;
+                let sessionExpiry = 0;
+                let pending = null; // resolver for the in-flight execute()
+
+                // Called by Turnstile via the data-* attributes, so they must be
+                // reachable on window even though the rest is scoped.
+                window.askTurnstileShow = function () { wrap.classList.add("is-open"); };
+                window.askTurnstileHide = function () { wrap.classList.remove("is-open"); };
+                window.askTurnstileToken = function (tok) {
+                    wrap.classList.remove("is-open");
+                    if (pending) { pending.resolve(tok); pending = null; }
+                };
+                window.askTurnstileError = function () {
+                    wrap.classList.remove("is-open");
+                    if (pending) { pending.reject(new Error("turnstile")); pending = null; }
+                };
+
+                function solveTurnstile() {
+                    return new Promise(function (resolve, reject) {
+                        pending = { resolve: resolve, reject: reject };
+                        // Clear any spent token before asking for a new one.
+                        window.turnstile.reset("#ask-turnstile");
+                        // 60s covers a visitor reading and clicking the checkbox.
+                        setTimeout(function () {
+                            if (pending) { pending.reject(new Error("timeout")); pending = null; }
+                        }, 60000);
+                        window.turnstile.execute("#ask-turnstile");
+                    });
+                }
+
+                async function ensureSession() {
+                    if (session && Date.now() < sessionExpiry) return session;
+
+                    const tok = await solveTurnstile();
+                    const res = await fetch(SESSION_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ turnstileToken: tok }),
+                    });
+                    if (!res.ok) throw new Error("session " + res.status);
+                    const data = await res.json();
+                    session = data.session;
+                    // Renew a minute early rather than failing a question on the edge.
+                    sessionExpiry = Date.now() + Math.max(0, data.expiresIn - 60000);
+                    return session;
                 }
 
                 async function ask(question) {
@@ -1589,11 +1661,6 @@
 
                     if (!window.turnstile) {
                         setAnswer("The verification step didn't load — a content blocker may be stopping it. The r\u00e9sum\u00e9 above covers the same ground.", "is-error");
-                        return;
-                    }
-                    const t = token();
-                    if (!t) {
-                        setAnswer("Just finishing the verification check — try again in a moment.", "is-error");
                         return;
                     }
 
@@ -1604,10 +1671,12 @@
                         '<span class="ask-dots"><i></i><i></i><i></i></span></span>';
 
                     try {
-                        const res = await fetch(ENDPOINT, {
+                        const sess = await ensureSession();
+
+                        const res = await fetch(ASK_URL, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ question, turnstileToken: t }),
+                            body: JSON.stringify({ question, session: sess }),
                         });
                         if (!res.ok || !res.body) throw new Error("HTTP " + res.status);
 
@@ -1643,11 +1712,17 @@
                         }
                         if (!out) throw new Error("empty response");
                     } catch (err) {
+                        // Drop a stale session so the next attempt re-challenges
+                        // rather than failing again with the same dead token.
+                        session = null;
+                        sessionExpiry = 0;
                         // A dead demo reads worse than no demo — fail like a person.
                         setAnswer("This is temporarily unreachable — my side, not yours. The r\u00e9sum\u00e9 above covers the same ground, and email still works.", "is-error");
                     } finally {
-                        // The token is spent either way; get a fresh one.
-                        if (window.turnstile) window.turnstile.reset();
+                        // No reset here — the Turnstile token was spent on the
+                        // session handshake and the session carries the rest.
+                        // solveTurnstile() resets when a new token is needed.
+                        wrap.classList.remove("is-open");
                         send.disabled = false;
                     }
                 }
