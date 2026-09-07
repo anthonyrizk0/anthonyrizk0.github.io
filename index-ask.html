@@ -1101,7 +1101,7 @@
                         >Email</a
                     >
                     <a class="btn ask-jump" href="#ask">
-                        Ask about my work
+                        Ask my r&eacute;sum&eacute; anything
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
                     </a>
                 </div>
@@ -1468,9 +1468,10 @@
                 </h2>
 
                 <p class="ask-intro">
-                    Twenty years doesn't fit on one page. Ask and I'll answer
-                    from my own notes — projects, decisions, the parts that
-                    didn't make the r&eacute;sum&eacute;.
+                    Twenty years doesn't fit on one page. This is an LLM
+                    answering from a corpus I write and maintain — projects,
+                    decisions, the parts that didn't make the
+                    r&eacute;sum&eacute;. I built and host it end to end.
                 </p>
 
                 <form class="ask-form" id="ask-form">
@@ -1498,8 +1499,10 @@
                 </div>
 
                 <p class="ask-note">
-                    Answers come from my own notes — not the open web. It will
-                    tell you when something isn't covered.
+                    Grounded generation over my own notes, not the open web.
+                    No vector database — the corpus fits in context, which is
+                    simpler and more accurate than retrieval at this size. It
+                    will tell you when something isn't covered.
                 </p>
 
                 <div class="ask-turnstile" id="ask-turnstile-wrap">
@@ -1667,7 +1670,7 @@
                     send.disabled = true;
                     answer.className = "ask-answer is-streaming";
                     answer.innerHTML =
-                        '<span class="ask-thinking">Looking through my notes' +
+                        '<span class="ask-thinking">Reading the corpus' +
                         '<span class="ask-dots"><i></i><i></i><i></i></span></span>';
 
                     try {
