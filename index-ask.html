@@ -1174,6 +1174,38 @@
             :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
             :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
             @media print { .theme-toggle { display: none; } }
+
+            /* The Ask jump is a different kind of object from LinkedIn and
+               Email — an in-page action, not an external link — so it gets its
+               own accent rather than competing for .primary. Teal is already
+               the colour of the live-answer state, which makes it read as
+               "the interactive part of this page". */
+            .btn.ask-jump {
+                border-color: color-mix(in srgb, var(--teal) 45%, transparent);
+                background: color-mix(in srgb, var(--teal) 10%, transparent);
+                color: var(--teal);
+            }
+            .btn.ask-jump:hover {
+                border-color: var(--teal);
+                background: color-mix(in srgb, var(--teal) 20%, transparent);
+                color: var(--teal);
+            }
+            /* Nudges three times on load, then stays put. Enough to catch the
+               eye once; not a permanent animation next to someone's name. */
+            .btn.ask-jump svg {
+                animation: ask-jump-nudge 1.5s ease-in-out 3;
+            }
+            .btn.ask-jump:hover svg {
+                animation: ask-jump-nudge 1.5s ease-in-out infinite;
+            }
+            @keyframes ask-jump-nudge {
+                0%, 55%, 100% { transform: translateY(0); }
+                75% { transform: translateY(3px); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .btn.ask-jump svg,
+                .btn.ask-jump:hover svg { animation: none; }
+            }
         </style>
     </head>
     <body>
