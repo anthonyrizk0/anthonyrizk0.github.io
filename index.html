@@ -1754,6 +1754,57 @@
                 const ASK_URL = "https://ask.anthonyrizk.me/ask";
                 const SESSION_URL = "https://ask.anthonyrizk.me/session";
 
+                // --- funnel -------------------------------------------------
+                // Six fixed events, fired once each. No identifiers, no content,
+                // no cookies — just whether the section was reached, how, and
+                // whether it created intent. This is what tells me whether
+                // placing Ask after Experience with a header anchor was right.
+                const EVENT_URL = "https://ask.anthonyrizk.me/event";
+                const fired = new Set();
+
+                function track(name) {
+                    if (fired.has(name)) return;
+                    fired.add(name);
+                    try {
+                        const body = JSON.stringify({ name });
+                        // sendBeacon survives the page being closed mid-flight.
+                        if (navigator.sendBeacon) {
+                            navigator.sendBeacon(
+                                EVENT_URL,
+                                new Blob([body], { type: "application/json" }),
+                            );
+                        } else {
+                            fetch(EVENT_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body,
+                                keepalive: true,
+                            });
+                        }
+                    } catch (e) {}
+                }
+
+                // Reached the section at all — the top of the funnel.
+                const askSection = document.getElementById("ask");
+                if (askSection && "IntersectionObserver" in window) {
+                    const io = new IntersectionObserver(
+                        function (entries) {
+                            for (const e of entries) {
+                                if (e.isIntersecting) {
+                                    track("ask_seen");
+                                    io.disconnect();
+                                }
+                            }
+                        },
+                        { threshold: 0.25 },
+                    );
+                    io.observe(askSection);
+                }
+
+                // Arrived via the header anchor rather than by scrolling.
+                const jump = document.querySelector(".ask-jump");
+                if (jump) jump.addEventListener("click", function () { track("ask_pill"); });
+
                 const form = document.getElementById("ask-form");
                 const input = document.getElementById("ask-input");
                 const send = document.getElementById("ask-send");
@@ -1992,6 +2043,8 @@
                     }
                 }
 
+                input.addEventListener("focus", function () { track("ask_focus"); });
+
                 form.addEventListener("submit", function (e) {
                     e.preventDefault();
                     ask(input.value.trim());
@@ -2000,6 +2053,8 @@
                 chips.addEventListener("click", function (e) {
                     const chip = e.target.closest(".ask-chip");
                     if (!chip) return;
+                    const idx = Array.prototype.indexOf.call(chips.children, chip);
+                    if (idx >= 0 && idx < 3) track("ask_chip_" + idx);
                     input.value = chip.textContent.trim();
                     ask(input.value);
                 });
