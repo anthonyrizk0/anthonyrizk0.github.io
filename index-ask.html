@@ -1050,11 +1050,27 @@
                 font-size: 0.9rem;
                 line-height: 1.68;
                 color: var(--text);
-                white-space: pre-wrap;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
             }
+            /* answers arrive as markdown and are rendered, so style the output */
+            .ask-answer p { margin: 0 0 0.85em; }
+            .ask-answer p:last-child { margin-bottom: 0; }
+            .ask-answer strong { color: var(--text); font-weight: 600; }
+            .ask-answer em { color: var(--text-mid); font-style: italic; }
+            .ask-answer code {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 0.85em;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                padding: 1px 5px;
+                color: var(--teal);
+            }
+            .ask-answer ul { margin: 0 0 0.85em; padding-left: 1.15em; }
+            .ask-answer ul:last-child { margin-bottom: 0; }
+            .ask-answer li { margin-bottom: 0.35em; }
             .ask-answer.is-streaming { border-color: color-mix(in srgb, var(--teal) 35%, transparent); }
             .ask-answer.is-error { border-color: color-mix(in srgb, var(--orange) 30%, transparent); color: var(--text-mid); }
             .ask-hint { color: var(--text-dim); font-size: 0.84rem; }
@@ -1600,9 +1616,9 @@
                 </form>
 
                 <div class="ask-chips" id="ask-chips">
-                    <button type="button" class="ask-chip">Where has he led teams?</button>
-                    <button type="button" class="ask-chip">Tell me about the BlackBerry book</button>
-                    <button type="button" class="ask-chip">What's he working on now?</button>
+                    <button type="button" class="ask-chip">What's the hardest thing he's built?</button>
+                    <button type="button" class="ask-chip">How does he use AI in his own work?</button>
+                    <button type="button" class="ask-chip">What has he learned from things that didn't work?</button>
                 </div>
 
                 <div class="ask-answer" id="ask-answer" aria-live="polite">
@@ -1797,6 +1813,40 @@
                     return session;
                 }
 
+                // Minimal markdown rendering. HTML is escaped FIRST, so nothing
+                // the model emits — or that a visitor talks it into emitting —
+                // can inject markup. Unclosed markers render literally and
+                // correct themselves as the closing marker streams in.
+                function escapeHtml(s) {
+                    return s.replace(/[&<>"']/g, function (c) {
+                        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+                    });
+                }
+
+                function inlineMd(s) {
+                    return s
+                        .replace(/`([^`]+)`/g, "<code>$1</code>")
+                        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+                        .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+                }
+
+                function renderMarkdown(src) {
+                    return escapeHtml(src)
+                        .split(/\n{2,}/)
+                        .filter(function (b) { return b.trim(); })
+                        .map(function (block) {
+                            var lines = block.split("\n").filter(function (l) { return l.trim(); });
+                            var bullets = lines.every(function (l) { return /^\s*[-*]\s+/.test(l); });
+                            if (bullets) {
+                                return "<ul>" + lines.map(function (l) {
+                                    return "<li>" + inlineMd(l.replace(/^\s*[-*]\s+/, "")) + "</li>";
+                                }).join("") + "</ul>";
+                            }
+                            return "<p>" + inlineMd(lines.join(" ")) + "</p>";
+                        })
+                        .join("");
+                }
+
                 async function ask(question) {
                     if (!question) return;
 
@@ -1882,7 +1932,7 @@
                                 if (msg.error) throw new Error(msg.error);
                                 if (msg.text) {
                                     out += msg.text;
-                                    answer.textContent = out;
+                                    answer.innerHTML = renderMarkdown(out);
                                 }
                                 if (msg.done) answer.className = "ask-answer";
                             }
