@@ -2,7 +2,6 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="robots" content="noindex" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>How the Ask box works — Anthony Rizk</title>
         <link rel="icon" type="image/png" href="/anthonyrizk_favicon.png" />
@@ -193,9 +192,49 @@ Cloudflare edge  ──tunnel──▶  nginx  ──▶  a small TypeScript ser
                 spending my budget on anything the provider hosts.
             </p>
 
+            <h2>Knowing whether it works</h2>
+            <p>
+                A corpus that changes and a model that can be swapped need some
+                way to answer "is this better or worse than yesterday" that
+                isn't a feeling. There's a fixed set of thirteen questions I can
+                run against any provider, recording latency, length, whether
+                anything came back at all, and whether expected facts appear.
+            </p>
+            <p>
+                Five of them are <strong>negatives</strong> — things it must
+                refuse. Salary, whether I'm an ML researcher who could pass an
+                interview on transformer internals, the capital of France, a
+                prompt injection, an employer I never worked for. Declining
+                rather than inventing is the whole proposition, so it gets more
+                tests than the happy path.
+            </p>
+            <div class="note">
+                <p>
+                    The instructive part was getting it wrong. My first version
+                    checked whether the answer <em>contained a refusal phrase</em>
+                    and failed three cases whose answers were perfect refusals —
+                    "No —", "out of scope", "I can't do that". That list never
+                    ends. Asserting the <em>absence of the wrong answer</em> is
+                    narrow and stable: no dollar figure, no "Paris", no invented
+                    role.
+                </p>
+            </div>
+            <p>
+                It also picked the model. Three configurations, same thirteen
+                questions, all passing — and the numbers rather than my
+                preferences decided which one runs.
+            </p>
+            <p>
+                What it deliberately doesn't do is judge quality. Whether an
+                answer reads well, hedges appropriately, or is something I'd
+                want a hiring manager to see — that's me reading two runs side
+                by side.
+            </p>
+
             <h2>Things it doesn't do</h2>
             <ul>
                 <li>No memory between questions — each one stands alone.</li>
+                <li>No automated judgement of answer quality; that part is still me reading.</li>
                 <li>No retrieval, for the reasons above.</li>
                 <li>No access to anything but the files I've written.</li>
                 <li>It will be wrong about things I've written badly. The corpus is the product; the plumbing is just plumbing.</li>
