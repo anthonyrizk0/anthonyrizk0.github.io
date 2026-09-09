@@ -1795,11 +1795,30 @@
                     }
 
                     try {
-                        const res = await fetch(ASK_URL, {
+                        let res = await fetch(ASK_URL, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ question, session: sess }),
                         });
+
+                        // A 403 here means the session is dead, not that the
+                        // visitor is unwelcome. The server's signing secret is
+                        // regenerated on restart, so a session can stop being
+                        // valid well before the client's own expiry — the
+                        // client cannot know that until it tries. Re-challenge
+                        // once rather than reporting an outage.
+                        if (res.status === 403) {
+                            console.warn("session rejected; re-challenging");
+                            session = null;
+                            sessionExpiry = 0;
+                            const fresh = await ensureSession();
+                            res = await fetch(ASK_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ question, session: fresh }),
+                            });
+                        }
+
                         if (!res.ok || !res.body) throw new Error("HTTP " + res.status);
 
                         const reader = res.body.getReader();
