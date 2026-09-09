@@ -1929,6 +1929,12 @@
                                 if (!data) continue;
 
                                 const msg = JSON.parse(data);
+                                if (msg.error === "no_output") {
+                                    // The model reasoned past its budget without
+                                    // answering. Not an outage — say so accurately.
+                                    setAnswer("That one ran long without producing an answer. Try asking it more narrowly.", "is-error");
+                                    return;
+                                }
                                 if (msg.error) throw new Error(msg.error);
                                 if (msg.text) {
                                     out += msg.text;
