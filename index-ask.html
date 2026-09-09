@@ -1772,9 +1772,29 @@
                         '<span class="ask-thinking">Reading the corpus' +
                         '<span class="ask-dots"><i></i><i></i><i></i></span></span>';
 
+                    // Verification is its own failure domain. Folding it into the
+                    // catch below reported every stalled challenge as a backend
+                    // outage, which sent debugging in the wrong direction.
+                    let sess;
                     try {
-                        const sess = await ensureSession();
+                        sess = await ensureSession();
+                    } catch (err) {
+                        console.error("verification failed:", err);
+                        session = null;
+                        sessionExpiry = 0;
+                        if (window.turnstile) window.turnstile.reset();
+                        wrap.classList.remove("is-open");
+                        send.disabled = false;
+                        setAnswer(
+                            err && err.message === "timeout"
+                                ? "The verification check didn't complete — that's usually a browser privacy setting or a content blocker. Try again, or reload the page."
+                                : "Couldn't complete the verification step. Try again, or reload the page.",
+                            "is-error",
+                        );
+                        return;
+                    }
 
+                    try {
                         const res = await fetch(ASK_URL, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -1814,6 +1834,7 @@
                         }
                         if (!out) throw new Error("empty response");
                     } catch (err) {
+                        console.error("ask failed:", err);
                         // Drop a stale session so the next attempt re-challenges
                         // rather than failing again with the same dead token.
                         session = null;
