@@ -1084,6 +1084,18 @@
             @media (prefers-reduced-motion: reduce) {
                 .ask-dots i { animation: none; opacity: 0.55; }
             }
+            .ask-down {
+                margin-left: 7px;
+                color: var(--blue);
+                animation: ask-nudge 1.4s ease-in-out infinite;
+            }
+            @keyframes ask-nudge {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(3px); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .ask-down { animation: none; }
+            }
             .ask-note {
                 font-size: 0.72rem;
                 color: var(--text-dim);
@@ -1717,10 +1729,37 @@
 
                 // Called by Turnstile via the data-* attributes, so they must be
                 // reachable on window even though the rest is scoped.
-                window.askTurnstileShow = function () { wrap.classList.add("is-open"); };
-                window.askTurnstileHide = function () { wrap.classList.remove("is-open"); };
+                // Two waiting states. "Reading the corpus" is a lie while the
+                // visitor is the one being waited on — and that moment is
+                // exactly when someone gives up.
+                function showThinking() {
+                    answer.className = "ask-answer is-streaming";
+                    answer.innerHTML =
+                        '<span class="ask-thinking">Reading the corpus' +
+                        '<span class="ask-dots"><i></i><i></i><i></i></span></span>';
+                }
+
+                function showVerifyPrompt() {
+                    answer.className = "ask-answer";
+                    answer.innerHTML =
+                        '<span class="ask-thinking">Verify below to continue' +
+                        '<svg class="ask-down" width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
+                        'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" ' +
+                        'stroke-linejoin="round" aria-hidden="true">' +
+                        '<path d="M12 5v14M6 13l6 6 6-6"/></svg></span>';
+                }
+
+                window.askTurnstileShow = function () {
+                    wrap.classList.add("is-open");
+                    showVerifyPrompt();
+                };
+                window.askTurnstileHide = function () {
+                    wrap.classList.remove("is-open");
+                    showThinking();
+                };
                 window.askTurnstileToken = function (tok) {
                     wrap.classList.remove("is-open");
+                    showThinking();
                     if (pending) { pending.resolve(tok); pending = null; }
                 };
                 window.askTurnstileError = function () {
@@ -1767,10 +1806,7 @@
                     }
 
                     send.disabled = true;
-                    answer.className = "ask-answer is-streaming";
-                    answer.innerHTML =
-                        '<span class="ask-thinking">Reading the corpus' +
-                        '<span class="ask-dots"><i></i><i></i><i></i></span></span>';
+                    showThinking();
 
                     // Verification is its own failure domain. Folding it into the
                     // catch below reported every stalled challenge as a backend
