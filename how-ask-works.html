@@ -192,6 +192,69 @@ Cloudflare edge  ──tunnel──▶  nginx  ──▶  a small TypeScript ser
                 spending my budget on anything the provider hosts.
             </p>
 
+            <h2>The same thing, for agents</h2>
+            <p>
+                The box on the r&eacute;sum&eacute; is one doorway. There's
+                another at <code>ask.anthonyrizk.me/mcp</code> — an
+                <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP</a>
+                server exposing a single tool, <code>ask_about_anthony</code>,
+                over the same corpus and the same prompt.
+            </p>
+            <p>
+                If you're evaluating me and you work in Claude, you can add it
+                as a connector and interrogate this material from inside your
+                own tooling rather than through my text box.
+            </p>
+            <p>
+                It also gets multi-turn for free, in a way the web box can't.
+                Your agent holds the conversation and decides what to look up
+                next; each call stays independent, with no session state on my
+                side to keep, expire or leak. The tool is a lookup primitive,
+                and the composition happens where the context already lives.
+            </p>
+
+            <h2>Letting agents in without opening a faucet</h2>
+            <p>
+                This is the part I found genuinely interesting, because it has
+                no settled answer yet.
+            </p>
+            <p>
+                Turnstile gates the web endpoint by proving a human rendered a
+                page. <strong>There is no equivalent for an agent.</strong> And
+                the obvious workaround — issue a token, publish it in the docs
+                — is theatre: a secret printed on a public page is not a
+                secret, it's a speed bump with extra steps.
+            </p>
+            <p>
+                So the endpoint is open, and the controls are the ones that
+                actually work on something unauthenticated:
+            </p>
+            <ul>
+                <li>Its own rate-limit zone, tighter than the web endpoint — an agent can loop far faster than a person can type.</li>
+                <li>A question-length cap declared in the tool schema, so the calling model sees the limit rather than discovering it.</li>
+                <li>A generation deadline, so nothing runs past the point where any client is still listening.</li>
+                <li>A prepaid balance with auto-reload off.</li>
+            </ul>
+            <div class="note">
+                <p>
+                    Only the last one <em>bounds</em> anything; the rest reduce
+                    the odds of reaching it. The honest worst case is that a
+                    stranger reads about my career until the credit runs out —
+                    which I can live with, and which is a clearer thing to
+                    reason about than a token I'd have had to pretend was
+                    private.
+                </p>
+            </div>
+            <p>
+                The tool's description is written for the model calling it
+                rather than for a person: each call is independent, prefer
+                several narrow questions to one broad one, and treat "not
+                covered" as an answer rather than something to rephrase
+                around. That last one is a safeguard — an agent retrying a
+                refusal from another angle is exactly how a grounded system
+                gets pressured into speculating.
+            </p>
+
             <h2>Knowing whether it works</h2>
             <p>
                 A corpus that changes and a model that can be swapped need some
