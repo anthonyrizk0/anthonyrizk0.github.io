@@ -1609,10 +1609,14 @@
                     </button>
                 </form>
 
+                <!-- Label and question are separate on purpose. Short labels
+                     scan; the question sent is the phrasing that produces the
+                     best answer, and it lands visibly in the input on click. -->
                 <div class="ask-chips" id="ask-chips">
-                    <button type="button" class="ask-chip">What's the hardest thing he's built?</button>
-                    <button type="button" class="ask-chip">How does he use AI in his own work?</button>
-                    <button type="button" class="ask-chip">What has he learned from things that didn't work?</button>
+                    <button type="button" class="ask-chip" data-question="What's the hardest thing he's built?">Hardest problem</button>
+                    <button type="button" class="ask-chip" data-question="How does he use AI in his own work?">AI in practice</button>
+                    <button type="button" class="ask-chip" data-question="What has he learned from things that didn't work?">What didn't work</button>
+                    <button type="button" class="ask-chip" data-question="What has he built recently?">Recent work</button>
                 </div>
 
                 <div class="ask-answer" id="ask-answer" aria-live="polite">
@@ -2040,8 +2044,11 @@
                     const chip = e.target.closest(".ask-chip");
                     if (!chip || busy) return;
                     const idx = Array.prototype.indexOf.call(chips.children, chip);
-                    if (idx >= 0 && idx < 3) track("ask_chip_" + idx);
-                    input.value = chip.textContent.trim();
+                    if (idx >= 0 && idx < 4) track("ask_chip_" + idx);
+                    // The label is short for scanning; the question is the
+                    // phrasing that answers well. Show the visitor which one
+                    // was actually asked.
+                    input.value = chip.dataset.question || chip.textContent.trim();
                     ask(input.value);
                 });
             })();
