@@ -1166,19 +1166,22 @@
             }
             /* Nudges three times on load, then stays put. Enough to catch the
                eye once; not a permanent animation next to someone's name. */
-            .btn.ask-jump svg {
+            .btn.ask-jump .ask-down-arrow {
                 animation: ask-jump-nudge 1.5s ease-in-out 3;
             }
-            .btn.ask-jump:hover svg {
+            .btn.ask-jump:hover .ask-down-arrow {
                 animation: ask-jump-nudge 1.5s ease-in-out infinite;
             }
+            /* Sparkle sits slightly brighter than the label — it's the part
+               doing the signalling. */
+            .btn.ask-jump .ask-spark { opacity: 0.9; }
             @keyframes ask-jump-nudge {
                 0%, 55%, 100% { transform: translateY(0); }
                 75% { transform: translateY(3px); }
             }
             @media (prefers-reduced-motion: reduce) {
-                .btn.ask-jump svg,
-                .btn.ask-jump:hover svg { animation: none; }
+                .btn.ask-jump .ask-down-arrow,
+                .btn.ask-jump:hover .ask-down-arrow { animation: none; }
             }
         </style>
     </head>
@@ -1203,10 +1206,11 @@
                     <h1>Anthony Rizk</h1>
                     <div class="subtitle">
                         I build mobile products and the systems behind them.
-                        Previously Meta, Google, and ClassDojo; now building
-                        independent apps and exploring what AI makes possible.
+                        Now building independent apps and AI-backed products,
+                        including the one on this page.
                     </div>
                     <div class="headline-tags">
+                        <span>ex-Meta &middot; Google &middot; ClassDojo</span>
                         <span>Austin, TX</span>
                     </div>
                 </div>
@@ -1233,8 +1237,9 @@
                         >Email</a
                     >
                     <a class="btn ask-jump" href="#ask">
+                        <svg class="ask-spark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l1.7 5.3a3 3 0 0 0 1.9 1.9l5.3 1.7-5.3 1.7a3 3 0 0 0-1.9 1.9L12 21.4l-1.7-5.4a3 3 0 0 0-1.9-1.9L3.1 12.4l5.3-1.7a3 3 0 0 0 1.9-1.9z"/><path d="M18.5 3v3.2M20.1 4.6h-3.2"/></svg>
                         Ask my r&eacute;sum&eacute; anything
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                        <svg class="ask-down-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
                     </a>
                 </div>
             </header>
