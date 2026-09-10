@@ -1010,7 +1010,10 @@
                 cursor: pointer;
                 transition: all 0.2s;
             }
-            .ask-chip:hover { border-color: var(--border-accent); color: var(--text); }
+            .ask-chip:hover:not(:disabled) { border-color: var(--border-accent); color: var(--text); }
+            /* Chips are disabled while a question is in flight. Without this
+               they look clickable and simply don't respond. */
+            .ask-chip:disabled { opacity: 0.5; cursor: not-allowed; }
             /* reserved height: streaming must not shove the page */
             .ask-answer {
                 background: var(--bg-surface);
@@ -1766,6 +1769,14 @@
                 const answer = document.getElementById("ask-answer");
                 const chips = document.getElementById("ask-chips");
 
+                let busy = false;
+
+                function setBusy(value) {
+                    busy = value;
+                    send.disabled = value;
+                    for (const chip of chips.children) chip.disabled = value;
+                }
+
                 function setAnswer(text, cls) {
                     answer.className = "ask-answer" + (cls ? " " + cls : "");
                     answer.textContent = text;
@@ -1822,14 +1833,29 @@
 
                 function solveTurnstile() {
                     return new Promise(function (resolve, reject) {
-                        pending = { resolve: resolve, reject: reject };
-                        // Clear any spent token before asking for a new one.
-                        window.turnstile.reset("#ask-turnstile");
-                        // 60s covers a visitor reading and clicking the checkbox.
-                        setTimeout(function () {
-                            if (pending) { pending.reject(new Error("timeout")); pending = null; }
-                        }, 60000);
-                        window.turnstile.execute("#ask-turnstile");
+                        // Each attempt owns its timer; settling it must not leave
+                        // a timeout behind that could reject a later challenge.
+                        let timer;
+                        const attempt = {
+                            resolve: function (token) { finish(); resolve(token); },
+                            reject: function (error) { finish(); reject(error); },
+                        };
+                        function finish() {
+                            clearTimeout(timer);
+                            if (pending === attempt) pending = null;
+                        }
+                        pending = attempt;
+                        try {
+                            // Clear any spent token before asking for a new one.
+                            window.turnstile.reset("#ask-turnstile");
+                            // 60s covers reading and clicking the checkbox.
+                            timer = setTimeout(function () {
+                                attempt.reject(new Error("timeout"));
+                            }, 60000);
+                            window.turnstile.execute("#ask-turnstile");
+                        } catch (error) {
+                            attempt.reject(error);
+                        }
                     });
                 }
 
@@ -1885,14 +1911,14 @@
                 }
 
                 async function ask(question) {
-                    if (!question) return;
+                    if (!question || busy) return;
 
                     if (!window.turnstile) {
                         setAnswer("The verification step didn't load — a content blocker may be stopping it. The r\u00e9sum\u00e9 above covers the same ground.", "is-error");
                         return;
                     }
 
-                    send.disabled = true;
+                    setBusy(true);
                     showThinking();
 
                     // Verification is its own failure domain. Folding it into the
@@ -1907,7 +1933,7 @@
                         sessionExpiry = 0;
                         if (window.turnstile) window.turnstile.reset();
                         wrap.classList.remove("is-open");
-                        send.disabled = false;
+                        setBusy(false);
                         setAnswer(
                             err && err.message === "timeout"
                                 ? "The verification check didn't complete — that's usually a browser privacy setting or a content blocker. Try again, or reload the page."
@@ -1994,7 +2020,7 @@
                         // session handshake and the session carries the rest.
                         // solveTurnstile() resets when a new token is needed.
                         wrap.classList.remove("is-open");
-                        send.disabled = false;
+                        setBusy(false);
                     }
                 }
 
@@ -2007,7 +2033,7 @@
 
                 chips.addEventListener("click", function (e) {
                     const chip = e.target.closest(".ask-chip");
-                    if (!chip) return;
+                    if (!chip || busy) return;
                     const idx = Array.prototype.indexOf.call(chips.children, chip);
                     if (idx >= 0 && idx < 3) track("ask_chip_" + idx);
                     input.value = chip.textContent.trim();
