@@ -204,6 +204,7 @@ Cloudflare edge  ──tunnel──▶  nginx  ──▶  a small TypeScript ser
                 If you're evaluating me and you work in Claude, you can add it
                 as a connector and interrogate this material from inside your
                 own tooling rather than through my text box.
+                <a href="/mcp">Setup for the usual clients is here.</a>
             </p>
             <p>
                 It also gets multi-turn for free, in a way the web box can't.
@@ -233,16 +234,26 @@ Cloudflare edge  ──tunnel──▶  nginx  ──▶  a small TypeScript ser
                 <li>Its own rate-limit zone, tighter than the web endpoint — an agent can loop far faster than a person can type.</li>
                 <li>A question-length cap declared in the tool schema, so the calling model sees the limit rather than discovering it.</li>
                 <li>A generation deadline, so nothing runs past the point where any client is still listening.</li>
+                <li>A daily spend cap, which closes this endpoint at a lower threshold than the website's.</li>
                 <li>A prepaid balance with auto-reload off.</li>
             </ul>
+            <p>
+                Only the last two <em>bound</em> anything; the rest reduce the
+                odds of reaching them. And the rate limit reduces less than it
+                looks — it's keyed per IP, and IPs are cheap, so a dozen of them
+                each walk past it without noticing it's there.
+            </p>
             <div class="note">
                 <p>
-                    Only the last one <em>bounds</em> anything; the rest reduce
-                    the odds of reaching it. The honest worst case is that a
-                    stranger reads about my career until the credit runs out —
-                    which I can live with, and which is a clearer thing to
-                    reason about than a token I'd have had to pretend was
-                    private.
+                    The ordering is the part I'd defend. The prepaid balance is
+                    a real bound but a blunt one: it's shared with the web
+                    endpoint, so draining it through the agent door would take
+                    the r&eacute;sum&eacute;'s Ask box down as collateral, at
+                    whatever hour it happened and without telling me. A daily
+                    cap that sheds the agent endpoint <em>first</em> keeps the
+                    failure where it belongs — a stranger gets to read about my
+                    career until the day's allowance runs out, and a person on
+                    the page still gets answers after it has.
                 </p>
             </div>
             <p>

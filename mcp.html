@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MCP endpoint — Anthony Rizk</title>
+        <meta
+            name="description"
+            content="Connect an agent to Anthony Rizk's résumé corpus over MCP. One tool, no auth, streamable HTTP."
+        />
+        <link rel="icon" type="image/png" href="/anthonyrizk_favicon.png" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            :root {
+                --bg: #0d0e1a; --bg-surface: #11121f; --bg-card: #141527;
+                --border: rgba(122,162,247,0.1); --border-mid: rgba(122,162,247,0.2);
+                --text: #c0caf5; --text-mid: #9aa5ce; --text-muted: #565f89; --text-dim: #3b4068;
+                --blue: #7aa2f7; --purple: #bb9af7; --teal: #73daca; --orange: #e0af68;
+            }
+            body {
+                font-family: "Inter", system-ui, sans-serif;
+                background: var(--bg); color: var(--text);
+                line-height: 1.7; padding: 56px 0 80px;
+            }
+            .container { max-width: 700px; margin: 0 auto; padding: 0 28px; }
+            .back {
+                display: inline-flex; align-items: center; gap: 7px;
+                font-family: "JetBrains Mono", monospace; font-size: 0.72rem;
+                color: var(--text-muted); text-decoration: none; margin-bottom: 30px;
+            }
+            .back:hover { color: var(--blue); }
+            h1 {
+                font-family: "Space Grotesk", sans-serif; font-size: 1.75rem;
+                font-weight: 700; letter-spacing: -0.4px; margin-bottom: 10px;
+            }
+            .lede { color: var(--text-mid); font-size: 1rem; margin-bottom: 36px; }
+            h2 {
+                font-family: "Space Grotesk", sans-serif; font-size: 0.7rem;
+                font-weight: 600; color: var(--text-muted); letter-spacing: 3px;
+                text-transform: uppercase; margin: 40px 0 16px;
+                display: flex; align-items: center; gap: 12px;
+            }
+            h2::before {
+                content: ""; display: inline-block; width: 3px; height: 13px;
+                background: linear-gradient(180deg, var(--blue), var(--purple));
+                border-radius: 2px; flex-shrink: 0;
+            }
+            h2::after {
+                content: ""; flex: 1; height: 1px;
+                background: linear-gradient(to right, var(--border), transparent);
+            }
+            p { color: var(--text-mid); margin-bottom: 16px; font-size: 0.95rem; }
+            strong { color: var(--text); font-weight: 500; }
+            a { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(122,162,247,0.3); }
+            a:hover { color: var(--purple); }
+            code {
+                font-family: "JetBrains Mono", monospace; font-size: 0.85em;
+                background: var(--bg-card); border: 1px solid var(--border);
+                border-radius: 4px; padding: 1px 5px; color: var(--teal);
+            }
+            ul { margin: 0 0 16px 20px; color: var(--text-mid); font-size: 0.95rem; }
+            li { margin-bottom: 7px; }
+            .note {
+                border-left: 2px solid rgba(224,175,104,0.45);
+                background: rgba(224,175,104,0.06);
+                padding: 13px 16px; margin: 20px 0; border-radius: 0 6px 6px 0;
+            }
+            .note p { margin: 0; font-size: 0.88rem; color: var(--text-mid); }
+
+            /* ── The URL, which is the whole point of the page ── */
+            .endpoint {
+                display: flex; align-items: stretch; gap: 0;
+                background: var(--bg-surface);
+                border: 1px solid var(--border-mid);
+                border-radius: 10px; margin: 0 0 10px; overflow: hidden;
+            }
+            .endpoint code {
+                flex: 1; background: none; border: none; border-radius: 0;
+                padding: 15px 16px; font-size: 0.84rem; color: var(--teal);
+                overflow-x: auto; white-space: nowrap;
+            }
+            .copy {
+                flex-shrink: 0; border: none; border-left: 1px solid var(--border);
+                background: var(--bg-card); color: var(--text-muted);
+                font-family: "JetBrains Mono", monospace; font-size: 0.7rem;
+                letter-spacing: 1px; text-transform: uppercase;
+                padding: 0 18px; cursor: pointer; transition: color 0.15s, background 0.15s;
+            }
+            .copy:hover { color: var(--blue); background: rgba(122,162,247,0.07); }
+            .copy.done { color: var(--teal); }
+            .tool-sig {
+                font-family: "JetBrains Mono", monospace; font-size: 0.76rem;
+                color: var(--text-muted); margin-bottom: 32px;
+            }
+            .tool-sig span { color: var(--purple); }
+
+            /* ── Per-client setup ── */
+            .client { margin-bottom: 22px; }
+            .client-name {
+                font-family: "Space Grotesk", sans-serif; font-size: 0.9rem;
+                font-weight: 600; color: var(--text); margin-bottom: 7px;
+            }
+            .client p { font-size: 0.88rem; margin-bottom: 8px; }
+            pre {
+                background: var(--bg-surface); border: 1px solid var(--border);
+                border-radius: 8px; padding: 14px 16px;
+                font-family: "JetBrains Mono", monospace; font-size: 0.76rem;
+                color: var(--text-mid); line-height: 1.75;
+                overflow-x: auto; white-space: pre;
+            }
+            pre .k { color: var(--purple); }
+            pre .s { color: var(--teal); }
+            footer {
+                margin-top: 52px; padding-top: 24px; border-top: 1px solid var(--border);
+                font-size: 0.8rem; color: var(--text-dim);
+            }
+            footer a { color: var(--text-muted); border: none; }
+            footer a:hover { color: var(--blue); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a class="back" href="/">&larr; anthonyrizk.me</a>
+
+            <h1>Ask my résumé from your own tooling</h1>
+            <p class="lede">
+                The Ask box on my site is also an
+                <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP</a>
+                server. Add it as a connector and your agent can interrogate my
+                background directly — no copying and pasting out of a text box
+                on someone else's page.
+            </p>
+
+            <div class="endpoint">
+                <code id="url">https://ask.anthonyrizk.me/mcp</code>
+                <button class="copy" id="copy" type="button">Copy</button>
+            </div>
+            <div class="tool-sig">
+                streamable http · no auth · one tool —
+                <span>ask_about_anthony(question)</span>
+            </div>
+
+            <h2>Add it</h2>
+
+            <div class="client">
+                <div class="client-name">Claude Code</div>
+                <pre>claude mcp add --transport http anthony https://ask.anthonyrizk.me/mcp</pre>
+            </div>
+
+            <div class="client">
+                <div class="client-name">Claude Desktop / claude.ai</div>
+                <p>
+                    Settings → Connectors → <strong>Add custom connector</strong>,
+                    then paste the URL above.
+                </p>
+            </div>
+
+            <div class="client">
+                <div class="client-name">Cursor, Windsurf, and most config-file clients</div>
+                <pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"anthony"</span>: {
+      <span class="k">"url"</span>: <span class="s">"https://ask.anthonyrizk.me/mcp"</span>
+    }
+  }
+}</pre>
+            </div>
+
+            <div class="client">
+                <div class="client-name">Anything else</div>
+                <p>
+                    Streamable HTTP, stateless, no authentication and no headers
+                    to set. If your client speaks MCP over HTTP, the URL is all
+                    it needs.
+                </p>
+            </div>
+
+            <h2>What it's good at</h2>
+            <p>
+                It answers from a corpus I write and maintain — roles, projects,
+                the decisions behind them, and a fair amount that never fit on
+                the résumé. It is not searching the web, and it will tell you
+                when something isn't covered rather than guessing.
+            </p>
+            <p>Three things worth knowing before you point an agent at it:</p>
+            <ul>
+                <li>
+                    <strong>Each call is independent.</strong> There's no session
+                    and no memory between questions, so a follow-up like "how did
+                    that compare?" won't resolve. Restate what you mean.
+                </li>
+                <li>
+                    <strong>Narrow beats broad.</strong> "What has he built
+                    recently?" returns concrete projects; "what is he up to?"
+                    returns a summary. Specific questions get named technologies,
+                    decisions and outcomes.
+                </li>
+                <li>
+                    <strong>A refusal is an answer.</strong> If it says something
+                    isn't covered, rephrasing and retrying won't find it — the
+                    corpus declines rather than inventing, and pressing is how
+                    you'd get a wrong answer instead of no answer.
+                </li>
+            </ul>
+
+            <h2>No auth, on purpose</h2>
+            <p>
+                The browser version is gated by Turnstile, which proves a human
+                rendered a page. There's no agent equivalent, and a token
+                published on a public page isn't a secret — so gating this would
+                be theatre that also defeated the point.
+            </p>
+            <p>
+                Instead it's bounded by the things that actually work on an open
+                endpoint: a rate limit, a hard deadline on each generation, and a
+                daily spend cap that closes <em>this</em> endpoint before it
+                touches the website's. If you ever get told it's reached its
+                limit for the day, that's what happened — the
+                <a href="/#ask">Ask box</a> will still be answering, and it's the
+                same corpus.
+            </p>
+            <div class="note">
+                <p>
+                    This exists because integrating agents into hiring seemed
+                    like a more interesting experiment than another PDF. If you
+                    do connect it, I'd genuinely like to know what you asked and
+                    where it fell short —
+                    <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a>.
+                </p>
+            </div>
+
+            <footer>
+                <a href="/how-ask-works">How the whole thing works</a> ·
+                <a href="/">Résumé</a> ·
+                <a href="/anthony_rizk_resume_sep2026.pdf">PDF</a>
+            </footer>
+        </div>
+
+        <script>
+            // The page exists to get a URL into someone's config file, so make
+            // that one gesture. Clipboard access needs a secure context and can
+            // still be refused, hence the fallback to selecting the text.
+            (function () {
+                var btn = document.getElementById("copy");
+                var url = document.getElementById("url");
+                btn.addEventListener("click", function () {
+                    var done = function () {
+                        btn.textContent = "Copied";
+                        btn.classList.add("done");
+                        setTimeout(function () {
+                            btn.textContent = "Copy";
+                            btn.classList.remove("done");
+                        }, 1600);
+                    };
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(url.textContent.trim()).then(done, select);
+                    } else {
+                        select();
+                    }
+                    function select() {
+                        var r = document.createRange();
+                        r.selectNodeContents(url);
+                        var s = window.getSelection();
+                        s.removeAllRanges();
+                        s.addRange(r);
+                        btn.textContent = "Copy it";
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

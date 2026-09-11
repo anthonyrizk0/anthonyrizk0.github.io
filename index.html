@@ -12,11 +12,12 @@
 
   No auth, deliberately. Turnstile proves a human rendered a page and has no
   agent equivalent, and a token published in documentation isn't a secret. So
-  it's rate-limited, capped, deadlined, and backed by a prepaid balance with
-  auto-reload off — the worst case being that you read about my career until
-  the credit runs out.
+  it's rate-limited, deadlined, and held to a daily spend cap that closes this
+  endpoint before it touches the website's — the worst case being that you read
+  about my career until the day's allowance runs out.
 
-  The reasoning, and everything else behind it: /how-ask-works.html
+  Setup for the usual clients: /mcp
+  The reasoning, and everything else behind it: /how-ask-works
 -->
 <html lang="en">
     <head>
