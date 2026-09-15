@@ -6,7 +6,7 @@
         <title>MCP endpoint — Anthony Rizk</title>
         <meta
             name="description"
-            content="Connect an agent to Anthony Rizk's résumé corpus over MCP. One tool, no auth, streamable HTTP."
+            content="Ask about Anthony Rizk's background from an MCP client. Connection details and setup examples for Codex, VS Code, Cursor, and Claude Code."
         />
         <link rel="icon" type="image/png" href="/anthonyrizk_favicon.png" />
         <link
@@ -126,13 +126,12 @@
         <div class="container">
             <a class="back" href="/">&larr; anthonyrizk.me</a>
 
-            <h1>Ask my résumé from your own tooling</h1>
+            <h1>Connect via MCP</h1>
             <p class="lede">
-                The Ask box on my site is also an
+                Ask about my background from your own AI assistant using
                 <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP</a>
-                server. Add it as a connector and your agent can interrogate my
-                background directly — no copying and pasting out of a text box
-                on someone else's page.
+                (Model Context Protocol). This server uses the same source
+                material as the <a href="/#ask">Ask box</a> on my site.
             </p>
 
             <div class="endpoint">
@@ -140,27 +139,37 @@
                 <button class="copy" id="copy" type="button">Copy</button>
             </div>
             <div class="tool-sig">
-                streamable http · no auth · one tool —
+                Streamable HTTP · no authentication ·
                 <span>ask_about_anthony(question)</span>
             </div>
 
-            <h2>Add it</h2>
+            <h2>Setup</h2>
+            <p>
+                In a client that supports remote MCP servers, add the URL above
+                and choose Streamable HTTP if asked for a transport. No API key
+                or custom headers are needed. You can name the server
+                <code>anthony</code>.
+            </p>
 
             <div class="client">
-                <div class="client-name">Claude Code</div>
-                <pre>claude mcp add --transport http anthony https://ask.anthonyrizk.me/mcp</pre>
+                <div class="client-name">Codex CLI</div>
+                <pre>codex mcp add anthony --url https://ask.anthonyrizk.me/mcp</pre>
             </div>
 
             <div class="client">
-                <div class="client-name">Claude Desktop / claude.ai</div>
+                <div class="client-name">VS Code / GitHub Copilot</div>
                 <p>
-                    Settings → Connectors → <strong>Add custom connector</strong>,
-                    then paste the URL above.
+                    Run <strong>MCP: Add Server</strong> from the Command Palette,
+                    choose HTTP, and enter the URL above.
                 </p>
             </div>
 
             <div class="client">
-                <div class="client-name">Cursor, Windsurf, and most config-file clients</div>
+                <div class="client-name">Cursor</div>
+                <p>
+                    Add this entry to <code>~/.cursor/mcp.json</code>, merging
+                    it with any existing <code>mcpServers</code> entries:
+                </p>
                 <pre>{
   <span class="k">"mcpServers"</span>: {
     <span class="k">"anthony"</span>: {
@@ -171,64 +180,53 @@
             </div>
 
             <div class="client">
-                <div class="client-name">Anything else</div>
-                <p>
-                    Streamable HTTP, stateless, no authentication and no headers
-                    to set. If your client speaks MCP over HTTP, the URL is all
-                    it needs.
-                </p>
+                <div class="client-name">Claude Code</div>
+                <pre>claude mcp add --transport http anthony https://ask.anthonyrizk.me/mcp</pre>
             </div>
-
-            <h2>What it's good at</h2>
             <p>
-                It answers from a corpus I write and maintain — roles, projects,
-                the decisions behind them, and a fair amount that never fit on
-                the résumé. It is not searching the web, and it will tell you
-                when something isn't covered rather than guessing.
+                More setup details:
+                <a href="https://developers.openai.com/codex/mcp">Codex</a> ·
+                <a href="https://code.visualstudio.com/docs/agent-customization/mcp-servers">VS Code</a> ·
+                <a href="https://cursor.com/help/customization/mcp">Cursor</a> ·
+                <a href="https://code.claude.com/docs/en/mcp">Claude Code</a>.
             </p>
-            <p>Three things worth knowing before you point an agent at it:</p>
+
+            <h2>Asking questions</h2>
+            <p>
+                Once connected, ask your assistant to use
+                <code>ask_about_anthony</code>. For example: “Ask Anthony's MCP
+                server about his work on PlantVision.”
+            </p>
+            <p>
+                Answers come from files I've written about my roles and projects.
+                The server doesn't search the web and is instructed to say when
+                something isn't covered.
+            </p>
             <ul>
                 <li>
-                    <strong>Each call is independent.</strong> There's no session
-                    and no memory between questions, so a follow-up like "how did
-                    that compare?" won't resolve. Restate what you mean.
+                    Each call is independent. Include the relevant context
+                    in follow-up questions.
                 </li>
                 <li>
-                    <strong>Narrow beats broad.</strong> "What has he built
-                    recently?" returns concrete projects; "what is he up to?"
-                    returns a summary. Specific questions get named technologies,
-                    decisions and outcomes.
+                    Ask about a specific role, project, or technology for
+                    a more detailed answer.
                 </li>
                 <li>
-                    <strong>A refusal is an answer.</strong> If it says something
-                    isn't covered, rephrasing and retrying won't find it — the
-                    corpus declines rather than inventing, and pressing is how
-                    you'd get a wrong answer instead of no answer.
+                    If the information isn't covered, try a different question
+                    or contact me directly.
                 </li>
             </ul>
 
-            <h2>No auth, on purpose</h2>
+            <h2>Usage limits</h2>
             <p>
-                The browser version is gated by Turnstile, which proves a human
-                rendered a page. There's no agent equivalent, and a token
-                published on a public page isn't a secret — so gating this would
-                be theatre that also defeated the point.
-            </p>
-            <p>
-                Instead it's bounded by the things that actually work on an open
-                endpoint: a rate limit, a hard deadline on each generation, and a
-                daily spend cap that closes <em>this</em> endpoint before it
-                touches the website's. If you ever get told it's reached its
-                limit for the day, that's what happened — the
-                <a href="/#ask">Ask box</a> will still be answering, and it's the
-                same corpus.
+                The endpoint is public, with rate limits, a response deadline,
+                and a daily spending cap. If it reaches its daily limit, try
+                again the next day or use the <a href="/#ask">Ask box</a>,
+                which has a separate limit.
             </p>
             <div class="note">
                 <p>
-                    This exists because integrating agents into hiring seemed
-                    like a more interesting experiment than another PDF. If you
-                    do connect it, I'd genuinely like to know what you asked and
-                    where it fell short —
+                    Feedback or questions? Email
                     <a href="mailto:anthony.rizk@gmail.com">anthony.rizk@gmail.com</a>.
                 </p>
             </div>
