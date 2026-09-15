@@ -6,7 +6,7 @@
         <title>PlantVision — Anthony Rizk</title>
         <meta
             name="description"
-            content="Real-time on-device plant identification on iOS: a two-stage YOLOv5 + MobileNet pipeline under ARKit, and what shipping it actually taught us."
+            content="PlantVision: on-device plant identification for Greg's iOS app, built with ARKit, Core ML, YOLOv5, and a fine-tuned MobileNet."
         />
         <link rel="icon" type="image/png" href="/anthonyrizk_favicon.png" />
         <link
@@ -125,38 +125,25 @@
 
             <h1>PlantVision</h1>
             <p class="lede">
-                Real-time, on-device plant identification on iOS — a two-stage
-                detector/classifier pipeline running under ARKit, using Core ML and
-                our own fine tuned model
+                Real-time plant identification for Greg's iOS app, running
+                on-device with ARKit, Core ML, and our own fine-tuned model.
             </p>
             <div class="meta">
                 <span>Greg</span> (greg.app) · Aug 2021 – Feb 2023 · Lead Software Engineer, iOS<br />
                 <span>Tech Stack</span> Swift · ARKit · Core ML · YOLOv5 · fine-tuned MobileNet · vDSP/Accelerate
             </div>
 
-            <h2>The bet</h2>
+            <h2>Why we built it</h2>
             <p>
-                Greg already had plant identification, through a third-party
-                server-side API. It worked — but it was discrete,
-                latency-heavy, network-dependent and expensive at scale.
+                Greg already identified plants through a third-party API.
+                Each identification required a network request, took time,
+                and added to our costs.
             </p>
             <p>
-                Our hypothesis was that real-time plant identification could
-                do a few things:
-                <ul>
-                    <li>
-                        'Magical' first-run experience
-                    </li>
-                    <li>
-                        Increase the chance you'd add a plant to the app (our key activation metric)
-                    </li>
-                    <li>
-                        Cool feature for people to share/talk about the app
-                    </li>
-                    <li>
-                        Provide better chance for app store visibility
-                    </li>
-                </ul>
+                We hoped real-time identification would make the first use
+                more engaging and encourage people to add a plant, our key
+                activation metric. We also hoped it would help people discover
+                the app through word of mouth and App Store exposure.
             </p>
             <h2>Architecture</h2>
             <figure>
@@ -167,131 +154,86 @@
                     />
                 </div>
                 <figcaption>
-                    Two stages - YOLOv5 detects plants and
-                    gives us rectangle in the frame; a fine-tuned MobileNet classifies the cropped region.
+                    YOLOv5 locates plants in the camera frame. A fine-tuned
+                    MobileNet identifies each plant from the cropped region.
                 </figcaption>
             </figure>
             <p>
-                <strong>Classification was incremental</strong> ML prediction aggregated across frames
+                We combined predictions across frames to refine each plant's
+                identification over time.
             </p>
 
             <h2>Under the hood</h2>
             <h3>Tracking</h3>
             <p>
-                Once YOLO found a plant we maintained its identity across
-                frames, keeping track of classification history.
+                Once YOLO found a plant, we tracked it across frames and
+                kept its classification history.
             </p>
             <h3>Scheduling</h3>
             <p>
-                With several candidates competing for limited throughput, we
-                evolved a prioritisation model over recency, confidence and
-                screen visibility. <strong>That scheduler was not designed up
-                front.</strong> It emerged from watching the system behave and
-                iterating. In retrospect the architecture had become a
-                lightweight inference scheduler over tracked candidates — which
-                is not how anyone would have described it at the start.
+                With several plants in view, we prioritised classification
+                based on how recently each had been processed, confidence in
+                its identification, and whether it was still visible. We tuned
+                those priorities through testing.
             </p>
             <h3>Test harness</h3>
             <p>
-                A separate internal app consuming the same shared framework, with
-                the parameters exposed: e.g. model selection, thresholds,
-                detection sensitivity, pass frequency, candidate count. Allowed anyone on the team, engineer or not, to run
-                controlled experiments across devices.
+                An internal app used the same framework and let anyone on the
+                team adjust models, confidence thresholds, detection sensitivity,
+                classification frequency, and candidate count. This made it
+                easier to compare settings across devices.
             </p>
 
-            <h2>What to surface</h2>
+            <h2>User experience</h2>
             <p>
-                Our full stack
-                supported multiple simultaneous almost instantaneous identifications, continuous
-                overlays and persistent AR anchors — which was our initial vision, and looked
-                very impressive but
-                proved confusing for actual users, both in terms of too much information and lack
-                of clarity about what they were supposed to do.
+                Our initial version identified several plants at once, with
+                continuously updated labels anchored in AR. Users found it
+                confusing: there was too much on screen, and it wasn't clear
+                what they should do next.
             </p>
             <div class="shots">
                 <figure>
                     <img src="/pv/guidance.jpg" alt="PlantVision camera view with green arc overlays and degree readouts guiding the user to reposition, and a &quot;Tap to identify the plant&quot; prompt." />
                     <figcaption>
-                        Angle guidance —
-                        ARKit raycasting already gave us angle and distance, so we
-                        could ask the user to move closer or tilt up. It reduced
-                        friction <em>and</em> improved classification quality:
-                        making the person a better input device.
+                        ARKit's angle and distance estimates let us guide users
+                        to move closer or tilt the camera for a better
+                        identification.
                     </figcaption>
                 </figure>
                 <figure>
                     <img src="/pv/community.jpg" alt="A community photo of pink hydrangeas, automatically labelled French Hydrangea, Hydrangea macrophylla." />
                     <figcaption>
-                        Cool bonus. Because the classifier ran
-                        on-device at zero marginal cost, we could silently label
-                        every photo posted to the community. Unplanned initially; it fell out of the shape of the system.
+                        We also used the on-device classifier to label community
+                        photos automatically, without an API charge per photo.
                     </figcaption>
                 </figure>
             </div>
 
-            <h2>What shipped, and what we never found out</h2>
+            <h2>Release and results</h2>
             <p>
-                Shipped: App Store consumer release, real-time AR identification,
-                angle guidance, zero-cost community photo labelling, and an
-                internal test harness.
+                We released real-time AR identification, camera guidance, and
+                community photo labelling in the App Store app.
             </p>
             <p>
-                <strong>The thing that actually hit us was Apple's App Tracking
-                Transparency change</strong>, which inverted CAC/LTV and
-                made paid acquisition uneconomical.
+                Apple's App Tracking Transparency change made paid acquisition
+                uneconomical for Greg: acquiring a customer cost more than
+                the revenue we expected from them.
             </p>
             <p>
-                <strong>The effect of PlantVision itself did was genuinely
-                unresolved.</strong> We didn't see a large uptick after launch,
-                and we also didn't have long enough to know whether one was
-                coming.
-            </p>
-            <div class="note">
-                <p>
-                    I want to be exact about that, because there's a tidier
-                    version of this story — "the hypothesis was wrong,
-                    identification turned out to be episodic rather than
-                    habit-forming" — and I've caught myself telling it that way.
-                    It's a plausible hypothesis. It isn't something we
-                    established. A confident post-hoc explanation for an
-                    inconclusive outcome is exactly the kind of thing worth
-                    distrusting.
-                </p>
-            </div>
-            <p>
-                In retrospect we should have shipped something simpler, faster,
-                which would have bought precisely the time we ran out of. I had
-                high conviction on this work, and some of that conviction was
-                wanting to build with genuinely interesting technology. From the
-                inside those two are easy to confuse.
+                We didn't see a large uptick after PlantVision launched, but
+                we didn't have enough time to establish its longer-term effect.
             </p>
             <p>
-                What carries forward technically: two-stage on-device inference
-                pipelines, incremental classification over time, lightweight
-                multi-object tracking, async scheduling under constrained
-                compute. What carries forward as judgment: <strong>acquisition
-                beats activation</strong>, and <strong>user experience beats
-                technology</strong> — both things I'd have said I believed at the
-                time, and was in practice weighting the other way.
-            </p>
-            <p>
-                The broader lesson is the one I keep returning to: successful AI
-                product work is usually less about maximising model capability
-                than about shaping interaction around a system that is imperfect
-                and always will be. Building something technically impressive is
-                table stakes.
+                In hindsight, I would have shipped a simpler version sooner
+                to leave more time to test whether it helped people get started
+                with the app. I was excited about the technology and let that
+                influence the scope too much.
             </p>
 
-            <div class="note">
-                <p>
-                    This is the summary. There's more detail than fits here —
-                    StoreKit as the company's sole revenue channel, what
-                    "ownership" means on a two-person iOS team, why a
-                    fifteen-person startup after Facebook and Google — and the
-                    <a href="/#ask">Ask box</a> will answer questions on any of
-                    it, or your own agent can via <a href="/mcp">MCP</a>.
-                </p>
-            </div>
+            <p>
+                For more about my work at Greg, use the
+                <a href="/#ask">Ask box</a> or connect through <a href="/mcp">MCP</a>.
+            </p>
 
             <footer>
                 <a href="/">Résumé</a> ·
