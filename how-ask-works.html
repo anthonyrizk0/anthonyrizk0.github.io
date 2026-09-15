@@ -87,17 +87,9 @@
             </a>
 
             <h1>How the Ask box works</h1>
-            <p class="lede">
-                A short, honest description of what's behind the question box
-                on my r&eacute;sum&eacute; — including the parts I chose
-                <em>not</em> to build.
-            </p>
-
-            <h2>The shape of it</h2>
             <p>
-                It answers questions about my background from a corpus of
-                markdown files I write and control. Not the open web, not a
-                general assistant.
+                The Ask box answers questions about my background using
+                Markdown files I've written. It doesn't search the web.
             </p>
             <div class="flow">your browser
    │  question + a verification token
@@ -107,212 +99,92 @@ Cloudflare edge  ──tunnel──▶  nginx  ──▶  a small TypeScript ser
                                              ▼
                                           the model  ──streamed back──▶</div>
             <p>
-                The service is a Hono app on Node running on a VPS. Nothing
-                listens on a public port — traffic arrives through a Cloudflare
-                Tunnel that dials <em>outbound</em>, so the machine's address is
-                never published and the firewall stays closed.
+                A small TypeScript service, built with Hono and Node, runs on
+                a VPS behind a Cloudflare Tunnel. It sends the question and my
+                background files to the model, then streams the answer back.
             </p>
 
-            <h2>Why there's no vector database</h2>
+            <h2>Source material</h2>
             <p>
-                The obvious move is retrieval-augmented generation: chunk the
-                corpus, embed it, search at query time. I didn't, and the
-                reasoning is the interesting part.
+                All the files currently fit in the model's context window, so
+                each question gets the full set. I considered searching for
+                relevant excerpts first (RAG), and might still try it as an
+                experiment, but sending everything is simpler for now.
             </p>
             <p>
-                My whole corpus fits comfortably in the model's context window.
-                When that's true, sending all of it is both simpler
-                <strong>and more accurate</strong> — retrieval introduces a
-                failure mode that stuffing doesn't have: the searcher misses,
-                and the model confidently says it doesn't know something that is
-                sitting right there in the corpus.
+                The files are split into <code>core/</code> and
+                <code>detail/</code>, so I can add retrieval for the detail
+                files if the collection gets too large or expensive to send.
             </p>
             <p>
-                So retrieval is a cost optimisation with a quality cost, not an
-                upgrade. It's worth taking when the corpus outgrows what I want
-                to pay per question — somewhere north of 150k tokens. The corpus
-                is split into <code>core/</code> (always sent) and
-                <code>detail/</code> (the part that will grow), and the function
-                that selects detail already takes the question as an argument.
-                When the day comes, its body becomes an embedding search and
-                nothing else changes.
-            </p>
-            <div class="note">
-                <p>
-                    Building the seam is cheap. Building the vector database
-                    before you need it costs you a failure mode you didn't have.
-                </p>
-            </div>
-
-            <h2>Keeping it honest</h2>
-            <p>
-                Everything it says is grounded in those files. The system prompt
-                tells it to decline rather than guess, and to ignore
-                instructions embedded in a visitor's question.
-            </p>
-            <p>
-                That matters more here than on most demos. This thing speaks as
-                me, to people deciding whether to work with me — an invented
-                employer would be worse than an admitted gap. If you ask it
-                something I haven't written about, it will tell you so. That's
-                the intended behaviour, not a limitation I'm apologising for.
+                The prompt tells the model to answer from those files, say when
+                something isn't covered, and ignore requests to override those
+                rules. It can still make mistakes, and the answers depend on
+                how well I've written the source material.
             </p>
 
-            <h2>Not being a money faucet</h2>
-            <p>
-                A public endpoint that calls a paid model is an open invitation.
-                The controls are layered, cheapest first:
-            </p>
+            <h2>Usage limits</h2>
+            <p>To limit abuse and keep costs manageable:</p>
             <ul>
-                <li><strong>Turnstile</strong> — verified once per visit, then a short-lived signed session token carries the rest, so you're not challenged per question.</li>
-                <li><strong>Rate limiting</strong> at nginx, keyed on the real client IP forwarded by Cloudflare.</li>
-                <li><strong>Caps</strong> on question length and response length.</li>
-                <li><strong>Abort on disconnect</strong> — close the tab and generation stops rather than billing for tokens nobody will read.</li>
-                <li><strong>A prepaid balance with auto-reload off.</strong> This is the one that actually bounds the damage; everything above only reduces the odds of reaching it.</li>
+                <li>Turnstile verifies each visit; a short-lived session token covers subsequent questions.</li>
+                <li>nginx limits requests per IP address.</li>
+                <li>Questions and responses have length limits.</li>
+                <li>Generation stops when the client disconnects.</li>
+                <li>The model provider uses a prepaid balance with auto-reload off.</li>
             </ul>
             <p>
-                On the verification: checking that a Turnstile token is
-                <em>valid</em> isn't enough. The sitekey is public — it's in the
-                page source — so anyone can embed the widget on their own site,
-                solve it honestly, and replay the token. The server also checks
-                the hostname the token was minted on and the action it was
-                bound to.
+                The server checks each Turnstile token's hostname and action
+                as well as its validity.
             </p>
 
-            <h2>When a provider has a bad day</h2>
+            <h2>Model selection</h2>
             <p>
-                Which model answers is named in a small config file the service
-                watches. Edit it and the next question uses the new provider —
-                no restart, and anything mid-stream finishes on the model it
-                started with.
+                I can change the model or provider in a config file without
+                restarting the service. Requests already in progress finish
+                with the model they started on.
             </p>
             <p>
-                Callers pass an alias, never a model name. A public endpoint
-                that accepted arbitrary model strings would be a proxy for
-                spending my budget on anything the provider hosts.
+                Clients can only request configured aliases, which keeps them
+                from selecting arbitrary models at my expense.
             </p>
 
-            <h2>The same thing, for agents</h2>
+            <h2>Agent access</h2>
             <p>
-                The box on the r&eacute;sum&eacute; is one doorway. There's
-                another at <code>ask.anthonyrizk.me/mcp</code> — an
+                An
                 <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP</a>
-                server exposing a single tool, <code>ask_about_anthony</code>,
-                over the same corpus and the same prompt.
+                server at <code>ask.anthonyrizk.me/mcp</code> exposes
+                <code>ask_about_anthony</code>, a tool that uses the same files
+                and prompt as the web box.
             </p>
             <p>
-                If you're evaluating me and you work in Claude, you can add it
-                as a connector and interrogate this material from inside your
-                own tooling rather than through my text box.
-                <a href="/mcp">Setup for the usual clients is here.</a>
+                You can add it to Claude or another MCP client to ask about my
+                background from there. <a href="/mcp">Setup instructions.</a>
             </p>
             <p>
-                It also gets multi-turn for free, in a way the web box can't.
-                Your agent holds the conversation and decides what to look up
-                next; each call stays independent, with no session state on my
-                side to keep, expire or leak. The tool is a lookup primitive,
-                and the composition happens where the context already lives.
+                Each request is independent, just like in the web box. Your
+                agent keeps the conversation context and can ask follow-up
+                questions.
             </p>
 
-            <h2>Letting agents in without opening a faucet</h2>
             <p>
-                This is the part I found genuinely interesting, because it has
-                no settled answer yet.
-            </p>
-            <p>
-                Turnstile gates the web endpoint by proving a human rendered a
-                page. <strong>There is no equivalent for an agent.</strong> And
-                the obvious workaround — issue a token, publish it in the docs
-                — is theatre: a secret printed on a public page is not a
-                secret, it's a speed bump with extra steps.
-            </p>
-            <p>
-                So the endpoint is open, and the controls are the ones that
-                actually work on something unauthenticated:
-            </p>
-            <ul>
-                <li>Its own rate-limit zone, tighter than the web endpoint — an agent can loop far faster than a person can type.</li>
-                <li>A question-length cap declared in the tool schema, so the calling model sees the limit rather than discovering it.</li>
-                <li>A generation deadline, so nothing runs past the point where any client is still listening.</li>
-                <li>A daily spend cap, which closes this endpoint at a lower threshold than the website's.</li>
-                <li>A prepaid balance with auto-reload off.</li>
-            </ul>
-            <p>
-                Only the last two <em>bound</em> anything; the rest reduce the
-                odds of reaching them. And the rate limit reduces less than it
-                looks — it's keyed per IP, and IPs are cheap, so a dozen of them
-                each walk past it without noticing it's there.
-            </p>
-            <div class="note">
-                <p>
-                    The ordering is the part I'd defend. The prepaid balance is
-                    a real bound but a blunt one: it's shared with the web
-                    endpoint, so draining it through the agent door would take
-                    the r&eacute;sum&eacute;'s Ask box down as collateral, at
-                    whatever hour it happened and without telling me. A daily
-                    cap that sheds the agent endpoint <em>first</em> keeps the
-                    failure where it belongs — a stranger gets to read about my
-                    career until the day's allowance runs out, and a person on
-                    the page still gets answers after it has.
-                </p>
-            </div>
-            <p>
-                The tool's description is written for the model calling it
-                rather than for a person: each call is independent, prefer
-                several narrow questions to one broad one, and treat "not
-                covered" as an answer rather than something to rephrase
-                around. That last one is a safeguard — an agent retrying a
-                refusal from another angle is exactly how a grounded system
-                gets pressured into speculating.
+                The MCP endpoint is public and doesn't use Turnstile. It has
+                stricter rate limits, a question-length limit, a generation
+                deadline, and a daily spending cap below the website's. That
+                lets it stop accepting agent requests while leaving budget for
+                visitors using the Ask box.
             </p>
 
-            <h2>Knowing whether it works</h2>
+            <h2>Testing</h2>
             <p>
-                A corpus that changes and a model that can be swapped need some
-                way to answer "is this better or worse than yesterday" that
-                isn't a feeling. There's a fixed set of thirteen questions I can
-                run against any provider, recording latency, length, whether
-                anything came back at all, and whether expected facts appear.
+                I use thirteen test questions to check response time, answer
+                length, and expected facts across models. Five check that the
+                model declines unsupported or unrelated questions, including
+                requests to invent an employer or ignore its instructions.
             </p>
             <p>
-                Five of them are <strong>negatives</strong> — things it must
-                refuse. Salary, whether I'm an ML researcher who could pass an
-                interview on transformer internals, the capital of France, a
-                prompt injection, an employer I never worked for. Declining
-                rather than inventing is the whole proposition, so it gets more
-                tests than the happy path.
+                Those checks catch specific errors. I also read answers side
+                by side to judge their accuracy, tone, and usefulness.
             </p>
-            <div class="note">
-                <p>
-                    The instructive part was getting it wrong. My first version
-                    checked whether the answer <em>contained a refusal phrase</em>
-                    and failed three cases whose answers were perfect refusals —
-                    "No —", "out of scope", "I can't do that". That list never
-                    ends. Asserting the <em>absence of the wrong answer</em> is
-                    narrow and stable: no dollar figure, no "Paris", no invented
-                    role.
-                </p>
-            </div>
-            <p>
-                It also picked the model. Three configurations, same thirteen
-                questions, all passing — and the numbers rather than my
-                preferences decided which one runs.
-            </p>
-            <p>
-                What it deliberately doesn't do is judge quality. Whether an
-                answer reads well, hedges appropriately, or is something I'd
-                want a hiring manager to see — that's me reading two runs side
-                by side.
-            </p>
-
-            <h2>Things it doesn't do</h2>
-            <ul>
-                <li>No memory between questions — each one stands alone.</li>
-                <li>No automated judgement of answer quality; that part is still me reading.</li>
-                <li>No retrieval, for the reasons above.</li>
-                <li>No access to anything but the files I've written.</li>
-                <li>It will be wrong about things I've written badly. The corpus is the product; the plumbing is just plumbing.</li>
-            </ul>
 
             <footer>
                 Built with Cloudflare Tunnel, Turnstile, nginx, Node and Hono.
