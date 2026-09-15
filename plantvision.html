@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>PlantVision — Anthony Rizk</title>
+        <meta
+            name="description"
+            content="Real-time on-device plant identification on iOS: a two-stage YOLOv5 + MobileNet pipeline under ARKit, and what shipping it actually taught us."
+        />
+        <link rel="icon" type="image/png" href="/anthonyrizk_favicon.png" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            :root {
+                --bg: #0d0e1a; --bg-surface: #11121f; --bg-card: #141527;
+                --border: rgba(122,162,247,0.1); --border-mid: rgba(122,162,247,0.2);
+                --text: #c0caf5; --text-mid: #9aa5ce; --text-muted: #565f89; --text-dim: #3b4068;
+                --blue: #7aa2f7; --purple: #bb9af7; --teal: #73daca; --orange: #e0af68;
+            }
+            body {
+                font-family: "Inter", system-ui, sans-serif;
+                background: var(--bg); color: var(--text);
+                line-height: 1.7; padding: 56px 0 80px;
+            }
+            .container { max-width: 760px; margin: 0 auto; padding: 0 28px; }
+            .back {
+                display: inline-flex; align-items: center; gap: 7px;
+                font-family: "JetBrains Mono", monospace; font-size: 0.72rem;
+                color: var(--text-muted); text-decoration: none; margin-bottom: 30px;
+            }
+            .back:hover { color: var(--blue); }
+            h1 {
+                font-family: "Space Grotesk", sans-serif; font-size: 1.75rem;
+                font-weight: 700; letter-spacing: -0.4px; margin-bottom: 10px;
+            }
+            .lede { color: var(--text-mid); font-size: 1rem; margin-bottom: 14px; }
+            .meta {
+                font-family: "JetBrains Mono", monospace; font-size: 0.72rem;
+                color: var(--text-muted); margin-bottom: 40px; line-height: 2;
+            }
+            .meta span { color: var(--teal); }
+            h2 {
+                font-family: "Space Grotesk", sans-serif; font-size: 0.7rem;
+                font-weight: 600; color: var(--text-muted); letter-spacing: 3px;
+                text-transform: uppercase; margin: 44px 0 16px;
+                display: flex; align-items: center; gap: 12px;
+            }
+            h2::before {
+                content: ""; display: inline-block; width: 3px; height: 13px;
+                background: linear-gradient(180deg, var(--blue), var(--purple));
+                border-radius: 2px; flex-shrink: 0;
+            }
+            h2::after {
+                content: ""; flex: 1; height: 1px;
+                background: linear-gradient(to right, var(--border), transparent);
+            }
+            h3 {
+                font-family: "Space Grotesk", sans-serif; font-size: 0.95rem;
+                font-weight: 600; color: var(--text); margin: 24px 0 8px;
+            }
+            p { color: var(--text-mid); margin-bottom: 16px; font-size: 0.95rem; }
+            strong { color: var(--text); font-weight: 500; }
+            em { color: var(--text); font-style: italic; }
+            a { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(122,162,247,0.3); }
+            a:hover { color: var(--purple); }
+            code {
+                font-family: "JetBrains Mono", monospace; font-size: 0.85em;
+                background: var(--bg-card); border: 1px solid var(--border);
+                border-radius: 4px; padding: 1px 5px; color: var(--teal);
+            }
+            ul { margin: 0 0 16px 20px; color: var(--text-mid); font-size: 0.95rem; }
+            li { margin-bottom: 7px; }
+            .note {
+                border-left: 2px solid rgba(224,175,104,0.45);
+                background: rgba(224,175,104,0.06);
+                padding: 13px 16px; margin: 20px 0; border-radius: 0 6px 6px 0;
+            }
+            .note p { margin: 0; font-size: 0.88rem; color: var(--text-mid); }
+
+            /* ── Figures ── */
+            figure { margin: 24px 0 28px; }
+            figcaption {
+                font-family: "JetBrains Mono", monospace; font-size: 0.7rem;
+                color: var(--text-muted); margin-top: 10px; line-height: 1.7;
+            }
+            /* The pipeline diagram is black line-art on white. Inverting it would
+               amplify the JPEG ringing around every stroke, so it sits on its own
+               light card instead — read as a figure rather than a hole in the page. */
+            .diagram {
+                background: #f7f8fa; border: 1px solid var(--border-mid);
+                border-radius: 10px; padding: 18px; overflow-x: auto;
+            }
+            .diagram img { display: block; width: 100%; min-width: 520px; }
+            .shots { display: flex; gap: 18px; flex-wrap: wrap; }
+            .shots figure { flex: 1 1 210px; margin: 24px 0 0; max-width: 260px; }
+            .shots img {
+                display: block; width: 100%; border-radius: 12px;
+                border: 1px solid var(--border-mid);
+            }
+            .tradeoffs { margin-top: 8px; }
+            .tradeoff {
+                border-left: 2px solid var(--border-mid);
+                padding: 2px 0 2px 16px; margin-bottom: 20px;
+            }
+            .tradeoff .t-name {
+                font-family: "Space Grotesk", sans-serif; font-size: 0.9rem;
+                font-weight: 600; color: var(--text); margin-bottom: 5px;
+            }
+            .tradeoff p { margin: 0; font-size: 0.9rem; }
+            footer {
+                margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border);
+                font-size: 0.8rem; color: var(--text-dim);
+            }
+            footer a { color: var(--text-muted); border: none; }
+            footer a:hover { color: var(--blue); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a class="back" href="/">&larr; anthonyrizk.me</a>
+
+            <h1>PlantVision</h1>
+            <p class="lede">
+                Real-time, on-device plant identification on iOS — a two-stage
+                detector/classifier pipeline running under ARKit, shipped to the
+                App Store at a fifteen-person startup, before on-device ML was
+                something you could assume.
+            </p>
+            <div class="meta">
+                <span>Greg</span> (greg.app) · Aug 2021 – Feb 2023 · Lead Software Engineer, iOS<br />
+                <span>Stack</span> Swift · ARKit · Core ML · YOLOv5 · fine-tuned MobileNet · vDSP/Accelerate
+            </div>
+
+            <h2>The bet</h2>
+            <p>
+                Greg already had plant identification, through a third-party
+                server-side API. It worked — but it was discrete,
+                latency-heavy, network-dependent and expensive at scale.
+            </p>
+            <p>
+                The hypothesis was that identification could become a
+                <em>primary interaction loop</em> — continuous and ambient
+                rather than a utility you occasionally invoke. That required
+                real-time, which required on-device. The investment case was
+                broader than the feature: App&nbsp;Store visibility, investment
+                signal, business development. Apple has since built
+                substantially this capability into the native camera, which both
+                validates the direction and is a lesson about timing.
+            </p>
+            <p>
+                I led the iOS implementation of the pipeline and the test
+                harness, and co-designed the architecture with our CTO. Mine
+                specifically: the crop/classification flow, ARKit integration,
+                scheduling behaviour, performance work, and the shipped
+                angle-guidance experience.
+            </p>
+
+            <h2>Architecture</h2>
+            <figure>
+                <div class="diagram">
+                    <img
+                        src="/pv/pipeline.jpg"
+                        alt="Pipeline diagram: camera and ARKit produce frames, YOLOv5 via CoreML locates a plant as a bounding box, an ARKit anchor provides visual overlay and a cropped frame, which feeds MobileNet via CoreML for aggregated classification, ending in adding the plant to the user's collection. A separate branch from the ARKit anchor drives camera guidance."
+                    />
+                </div>
+                <figcaption>
+                    Two stages, not one model doing both jobs. YOLOv5 detects and
+                    localises; a fine-tuned MobileNet classifies the cropped region.
+                </figcaption>
+            </figure>
+            <p>
+                <strong>The key insight was that classification shouldn't be a
+                single-shot event.</strong> It's incremental evidence
+                accumulation across frames. A single pass per detection was
+                noisy — flickering labels, oscillating confidence — and that one
+                decision is what drove stability, the scheduling model, and an AR
+                interaction that felt continuous rather than strobing.
+            </p>
+            <p>
+                <strong>The constraint was sustained throughput, not a per-frame
+                deadline.</strong> Inference ran asynchronously from the render
+                loop; we weren't trying to classify every frame. Fewer passes
+                just meant slower convergence and a less responsive feel. The
+                unit of work stopped being "a frame" and became "a tracked
+                candidate that needs more evidence."
+            </p>
+
+            <h2>Four tradeoffs that shaped it</h2>
+            <div class="tradeoffs">
+                <div class="tradeoff">
+                    <div class="t-name">1 · On-device vs server-side</div>
+                    <p>
+                        The existing API was accurate but discrete and costly at
+                        scale. On-device meant zero marginal cost, real-time,
+                        offline-capable — trading raw accuracy ceiling for
+                        interaction quality. This single decision unlocked
+                        everything else, including a dividend nobody planned for.
+                    </p>
+                </div>
+                <div class="tradeoff">
+                    <div class="t-name">2 · The frame-buffer crop</div>
+                    <p>
+                        Passing only YOLO's bounding-box region into MobileNet
+                        rather than the full frame. Critical to throughput — the
+                        classifier saw a smaller, more relevant input. Alongside
+                        it: the classifier's output is a large float vector, and
+                        the naive argmax loop was a genuine bottleneck. Moving it
+                        to <code>vDSP</code> gave at least an order of magnitude.
+                    </p>
+                </div>
+                <div class="tradeoff">
+                    <div class="t-name">3 · Stability vs responsiveness</div>
+                    <p>
+                        Temporal smoothing and confidence aggregation across
+                        passes, tuned empirically through the test harness rather
+                        than derived from first principles. Pass frequency against
+                        per-pass quality was a recurring tension, not a setting we
+                        solved once.
+                    </p>
+                </div>
+                <div class="tradeoff">
+                    <div class="t-name">4 · Training-data bias correction</div>
+                    <p>
+                        Community-sourced training data over-represented common
+                        species, so the classifier over-predicted them in the
+                        wild. Our ML engineer identified it; rather than
+                        retraining, we applied per-species calibration after the
+                        raw output. Pragmatic, and it measurably improved
+                        real-world quality.
+                    </p>
+                </div>
+            </div>
+
+            <h2>Under the hood</h2>
+            <h3>Tracking</h3>
+            <p>
+                Once YOLO found a plant we had to maintain its identity across
+                frames, or every detection would be a disconnected event and the
+                overlays would jitter. ARKit's camera pose gave world-space
+                continuity; on top of it we wrote association logic over
+                projected positions and temporal consistency. Each tracked
+                candidate carried its own state — world position, screen region,
+                classification history, confidence, temporal metadata.
+                Effectively lightweight multi-object tracking under constrained
+                compute.
+            </p>
+            <h3>Scheduling</h3>
+            <p>
+                With several candidates competing for limited throughput, we
+                evolved a prioritisation model over recency, confidence and
+                screen visibility. <strong>That scheduler was not designed up
+                front.</strong> It emerged from watching the system behave and
+                iterating. In retrospect the architecture had become a
+                lightweight inference scheduler over tracked candidates — which
+                is not how anyone would have described it at the start.
+            </p>
+            <h3>The test harness</h3>
+            <p>
+                A separate internal app consuming the same shared framework, with
+                the parameter surface exposed: model selection, thresholds,
+                detection sensitivity, pass frequency, candidate count. The point
+                was that anyone on the team, engineer or not, could run
+                controlled experiments across devices. Nearly every empirical
+                decision above came out of it.
+            </p>
+
+            <h2>What to surface</h2>
+            <p>
+                The system could do more than the product should. Internal builds
+                supported multiple simultaneous identifications, continuous
+                overlays and persistent AR anchors — compelling in a demo, and in
+                testing consistently overwhelming. Overlays competed for
+                attention, confidence updates read as visual noise, and the whole
+                thing felt unstable <em>even when it was correct</em>.
+            </p>
+            <p>
+                <strong>And instant turned out to be too instant.</strong>
+                Identification that resolved before the user had asked for it
+                read as the system doing something <em>to</em> them rather than
+                for them; people preferred to feel in control of when it fired.
+                Tap-to-identify solved both at once — the prompt appears once we
+                have confidence, and the decision to take it stays the user's.
+            </p>
+            <div class="shots">
+                <figure>
+                    <img src="/pv/guidance.jpg" alt="PlantVision camera view with green arc overlays and degree readouts guiding the user to reposition, and a &quot;Tap to identify the plant&quot; prompt." />
+                    <figcaption>
+                        Angle guidance — my initiative, and the counterexample.
+                        ARKit raycasting already gave us angle and distance, so we
+                        could ask the user to move closer or tilt up. It reduced
+                        friction <em>and</em> improved classification quality:
+                        making the person a better input device.
+                    </figcaption>
+                </figure>
+                <figure>
+                    <img src="/pv/community.jpg" alt="A community photo of pink hydrangeas, automatically labelled French Hydrangea, Hydrangea macrophylla." />
+                    <figcaption>
+                        An architectural dividend. Because the classifier ran
+                        on-device at zero marginal cost, we could silently label
+                        every photo posted to the community. Nobody set out to
+                        build it; it fell out of the shape of the system.
+                    </figcaption>
+                </figure>
+            </div>
+
+            <h2>What shipped, and what we never found out</h2>
+            <p>
+                Shipped: App Store consumer release, real-time AR identification,
+                angle guidance, zero-cost community photo labelling, and an
+                internal test harness the team actually used.
+            </p>
+            <p>
+                <strong>The thing that actually hit us was Apple's App Tracking
+                Transparency change</strong>, which inverted CAC against LTV and
+                made paid acquisition uneconomical. That's the measurable event,
+                it applied to the whole company rather than to PlantVision
+                specifically, and it's why the window closed.
+            </p>
+            <p>
+                <strong>What PlantVision itself did is genuinely
+                unresolved.</strong> We didn't see a large uptick after launch,
+                and we also didn't have long enough to know whether one was
+                coming.
+            </p>
+            <div class="note">
+                <p>
+                    I want to be exact about that, because there's a tidier
+                    version of this story — "the hypothesis was wrong,
+                    identification turned out to be episodic rather than
+                    habit-forming" — and I've caught myself telling it that way.
+                    It's a plausible hypothesis. It isn't something we
+                    established. A confident post-hoc explanation for an
+                    inconclusive outcome is exactly the kind of thing worth
+                    distrusting.
+                </p>
+            </div>
+            <p>
+                In retrospect we should have shipped something simpler, faster,
+                which would have bought precisely the time we ran out of. I had
+                high conviction on this work, and some of that conviction was
+                wanting to build with genuinely interesting technology. From the
+                inside those two are easy to confuse.
+            </p>
+            <p>
+                What carries forward technically: two-stage on-device inference
+                pipelines, incremental classification over time, lightweight
+                multi-object tracking, async scheduling under constrained
+                compute. What carries forward as judgment: <strong>acquisition
+                beats activation</strong>, and <strong>user experience beats
+                technology</strong> — both things I'd have said I believed at the
+                time, and was in practice weighting the other way.
+            </p>
+            <p>
+                The broader lesson is the one I keep returning to: successful AI
+                product work is usually less about maximising model capability
+                than about shaping interaction around a system that is imperfect
+                and always will be. Building something technically impressive is
+                table stakes.
+            </p>
+
+            <div class="note">
+                <p>
+                    This is the summary. There's more detail than fits here —
+                    StoreKit as the company's sole revenue channel, what
+                    "ownership" means on a two-person iOS team, why a
+                    fifteen-person startup after Facebook and Google — and the
+                    <a href="/#ask">Ask box</a> will answer questions on any of
+                    it, or your own agent can via <a href="/mcp">MCP</a>.
+                </p>
+            </div>
+
+            <footer>
+                <a href="/">Résumé</a> ·
+                <a href="/how-ask-works">How the Ask box works</a> ·
+                <a href="/mcp">MCP endpoint</a> ·
+                <a href="/anthony_rizk_resume_sep2026.pdf">PDF</a>
+            </footer>
+        </div>
+    </body>
+</html>

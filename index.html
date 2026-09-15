@@ -761,6 +761,14 @@
                     text-decoration: none;
                 }
 
+                /* On paper a bare "technical deep dive" is a phrase nobody can
+                   follow. Print the destination next to it. */
+                .desc a::after {
+                    content: " (anthonyrizk.me" attr(href) ")";
+                    color: #475569;
+                    font-size: 0.9em;
+                }
+
                 /* ── Header ── */
                 header {
                     padding: 18pt 0 12pt;
@@ -1326,6 +1334,8 @@
                                     object detection, and a fine-tuned classifier
                                     across several hundred species, all running
                                     on-device with no server round-trip
+                                    (<a href="/plantvision">technical deep
+                                    dive</a>)
                                 </li>
                                 <li>
                                     Owned the StoreKit subscription
