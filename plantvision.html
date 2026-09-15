@@ -126,13 +126,12 @@
             <h1>PlantVision</h1>
             <p class="lede">
                 Real-time, on-device plant identification on iOS — a two-stage
-                detector/classifier pipeline running under ARKit, shipped to the
-                App Store at a fifteen-person startup, before on-device ML was
-                something you could assume.
+                detector/classifier pipeline running under ARKit, using Core ML and
+                our own fine tuned model
             </p>
             <div class="meta">
                 <span>Greg</span> (greg.app) · Aug 2021 – Feb 2023 · Lead Software Engineer, iOS<br />
-                <span>Stack</span> Swift · ARKit · Core ML · YOLOv5 · fine-tuned MobileNet · vDSP/Accelerate
+                <span>Tech Stack</span> Swift · ARKit · Core ML · YOLOv5 · fine-tuned MobileNet · vDSP/Accelerate
             </div>
 
             <h2>The bet</h2>
@@ -142,111 +141,45 @@
                 latency-heavy, network-dependent and expensive at scale.
             </p>
             <p>
-                The hypothesis was that identification could become a
-                <em>primary interaction loop</em> — continuous and ambient
-                rather than a utility you occasionally invoke. That required
-                real-time, which required on-device. The investment case was
-                broader than the feature: App&nbsp;Store visibility, investment
-                signal, business development. Apple has since built
-                substantially this capability into the native camera, which both
-                validates the direction and is a lesson about timing.
+                Our hypothesis was that real-time plant identification could
+                do a few things:
+                <ul>
+                    <li>
+                        'Magical' first-run experience
+                    </li>
+                    <li>
+                        Increase the chance you'd add a plant to the app (our key activation metric)
+                    </li>
+                    <li>
+                        Cool feature for people to share/talk about the app
+                    </li>
+                    <li>
+                        Provide better chance for app store visibility
+                    </li>
+                </ul>
             </p>
-            <p>
-                I led the iOS implementation of the pipeline and the test
-                harness, and co-designed the architecture with our CTO. Mine
-                specifically: the crop/classification flow, ARKit integration,
-                scheduling behaviour, performance work, and the shipped
-                angle-guidance experience.
-            </p>
-
             <h2>Architecture</h2>
             <figure>
                 <div class="diagram">
                     <img
-                        src="/pv/pipeline.jpg"
+                        src="pv/pipeline.jpg"
                         alt="Pipeline diagram: camera and ARKit produce frames, YOLOv5 via CoreML locates a plant as a bounding box, an ARKit anchor provides visual overlay and a cropped frame, which feeds MobileNet via CoreML for aggregated classification, ending in adding the plant to the user's collection. A separate branch from the ARKit anchor drives camera guidance."
                     />
                 </div>
                 <figcaption>
-                    Two stages, not one model doing both jobs. YOLOv5 detects and
-                    localises; a fine-tuned MobileNet classifies the cropped region.
+                    Two stages - YOLOv5 detects plants and
+                    gives us rectangle in the frame; a fine-tuned MobileNet classifies the cropped region.
                 </figcaption>
             </figure>
             <p>
-                <strong>The key insight was that classification shouldn't be a
-                single-shot event.</strong> It's incremental evidence
-                accumulation across frames. A single pass per detection was
-                noisy — flickering labels, oscillating confidence — and that one
-                decision is what drove stability, the scheduling model, and an AR
-                interaction that felt continuous rather than strobing.
+                <strong>Classification was incremental</strong> ML prediction aggregated across frames
             </p>
-            <p>
-                <strong>The constraint was sustained throughput, not a per-frame
-                deadline.</strong> Inference ran asynchronously from the render
-                loop; we weren't trying to classify every frame. Fewer passes
-                just meant slower convergence and a less responsive feel. The
-                unit of work stopped being "a frame" and became "a tracked
-                candidate that needs more evidence."
-            </p>
-
-            <h2>Four tradeoffs that shaped it</h2>
-            <div class="tradeoffs">
-                <div class="tradeoff">
-                    <div class="t-name">1 · On-device vs server-side</div>
-                    <p>
-                        The existing API was accurate but discrete and costly at
-                        scale. On-device meant zero marginal cost, real-time,
-                        offline-capable — trading raw accuracy ceiling for
-                        interaction quality. This single decision unlocked
-                        everything else, including a dividend nobody planned for.
-                    </p>
-                </div>
-                <div class="tradeoff">
-                    <div class="t-name">2 · The frame-buffer crop</div>
-                    <p>
-                        Passing only YOLO's bounding-box region into MobileNet
-                        rather than the full frame. Critical to throughput — the
-                        classifier saw a smaller, more relevant input. Alongside
-                        it: the classifier's output is a large float vector, and
-                        the naive argmax loop was a genuine bottleneck. Moving it
-                        to <code>vDSP</code> gave at least an order of magnitude.
-                    </p>
-                </div>
-                <div class="tradeoff">
-                    <div class="t-name">3 · Stability vs responsiveness</div>
-                    <p>
-                        Temporal smoothing and confidence aggregation across
-                        passes, tuned empirically through the test harness rather
-                        than derived from first principles. Pass frequency against
-                        per-pass quality was a recurring tension, not a setting we
-                        solved once.
-                    </p>
-                </div>
-                <div class="tradeoff">
-                    <div class="t-name">4 · Training-data bias correction</div>
-                    <p>
-                        Community-sourced training data over-represented common
-                        species, so the classifier over-predicted them in the
-                        wild. Our ML engineer identified it; rather than
-                        retraining, we applied per-species calibration after the
-                        raw output. Pragmatic, and it measurably improved
-                        real-world quality.
-                    </p>
-                </div>
-            </div>
 
             <h2>Under the hood</h2>
             <h3>Tracking</h3>
             <p>
-                Once YOLO found a plant we had to maintain its identity across
-                frames, or every detection would be a disconnected event and the
-                overlays would jitter. ARKit's camera pose gave world-space
-                continuity; on top of it we wrote association logic over
-                projected positions and temporal consistency. Each tracked
-                candidate carried its own state — world position, screen region,
-                classification history, confidence, temporal metadata.
-                Effectively lightweight multi-object tracking under constrained
-                compute.
+                Once YOLO found a plant we maintained its identity across
+                frames, keeping track of classification history.
             </p>
             <h3>Scheduling</h3>
             <p>
@@ -258,38 +191,28 @@
                 lightweight inference scheduler over tracked candidates — which
                 is not how anyone would have described it at the start.
             </p>
-            <h3>The test harness</h3>
+            <h3>Test harness</h3>
             <p>
                 A separate internal app consuming the same shared framework, with
-                the parameter surface exposed: model selection, thresholds,
-                detection sensitivity, pass frequency, candidate count. The point
-                was that anyone on the team, engineer or not, could run
-                controlled experiments across devices. Nearly every empirical
-                decision above came out of it.
+                the parameters exposed: e.g. model selection, thresholds,
+                detection sensitivity, pass frequency, candidate count. Allowed anyone on the team, engineer or not, to run
+                controlled experiments across devices.
             </p>
 
             <h2>What to surface</h2>
             <p>
-                The system could do more than the product should. Internal builds
-                supported multiple simultaneous identifications, continuous
-                overlays and persistent AR anchors — compelling in a demo, and in
-                testing consistently overwhelming. Overlays competed for
-                attention, confidence updates read as visual noise, and the whole
-                thing felt unstable <em>even when it was correct</em>.
-            </p>
-            <p>
-                <strong>And instant turned out to be too instant.</strong>
-                Identification that resolved before the user had asked for it
-                read as the system doing something <em>to</em> them rather than
-                for them; people preferred to feel in control of when it fired.
-                Tap-to-identify solved both at once — the prompt appears once we
-                have confidence, and the decision to take it stays the user's.
+                Our full stack
+                supported multiple simultaneous almost instantaneous identifications, continuous
+                overlays and persistent AR anchors — which was our initial vision, and looked
+                very impressive but
+                proved confusing for actual users, both in terms of too much information and lack
+                of clarity about what they were supposed to do.
             </p>
             <div class="shots">
                 <figure>
                     <img src="/pv/guidance.jpg" alt="PlantVision camera view with green arc overlays and degree readouts guiding the user to reposition, and a &quot;Tap to identify the plant&quot; prompt." />
                     <figcaption>
-                        Angle guidance — my initiative, and the counterexample.
+                        Angle guidance —
                         ARKit raycasting already gave us angle and distance, so we
                         could ask the user to move closer or tilt up. It reduced
                         friction <em>and</em> improved classification quality:
@@ -299,10 +222,9 @@
                 <figure>
                     <img src="/pv/community.jpg" alt="A community photo of pink hydrangeas, automatically labelled French Hydrangea, Hydrangea macrophylla." />
                     <figcaption>
-                        An architectural dividend. Because the classifier ran
+                        Cool bonus. Because the classifier ran
                         on-device at zero marginal cost, we could silently label
-                        every photo posted to the community. Nobody set out to
-                        build it; it fell out of the shape of the system.
+                        every photo posted to the community. Unplanned initially; it fell out of the shape of the system.
                     </figcaption>
                 </figure>
             </div>
@@ -311,17 +233,15 @@
             <p>
                 Shipped: App Store consumer release, real-time AR identification,
                 angle guidance, zero-cost community photo labelling, and an
-                internal test harness the team actually used.
+                internal test harness.
             </p>
             <p>
                 <strong>The thing that actually hit us was Apple's App Tracking
-                Transparency change</strong>, which inverted CAC against LTV and
-                made paid acquisition uneconomical. That's the measurable event,
-                it applied to the whole company rather than to PlantVision
-                specifically, and it's why the window closed.
+                Transparency change</strong>, which inverted CAC/LTV and
+                made paid acquisition uneconomical.
             </p>
             <p>
-                <strong>What PlantVision itself did is genuinely
+                <strong>The effect of PlantVision itself did was genuinely
                 unresolved.</strong> We didn't see a large uptick after launch,
                 and we also didn't have long enough to know whether one was
                 coming.
