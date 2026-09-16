@@ -39,3 +39,9 @@ paths (`/pv/foo.jpg`) are the safer habit.
 The Ask box posts a fixed vocabulary of event names to `/event` — no free text,
 no identifiers, nothing about the visitor. Adding a new event means adding it
 to the allowlist in `../ask-api/src/server.ts` too, or it's silently dropped.
+
+**The beacon body is `text/plain`, and that isn't sloppiness.** The call is
+cross-origin and `sendBeacon` can't preflight, so a non-safelisted type like
+`application/json` is dropped silently by Chrome. It was, for a week — three
+humans asked questions in one afternoon and the funnel logged nothing. Don't
+"correct" it back. The server parses the body as JSON whatever the header says.

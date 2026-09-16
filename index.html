@@ -1761,15 +1761,27 @@
                     try {
                         const body = JSON.stringify({ name });
                         // sendBeacon survives the page being closed mid-flight.
+                        //
+                        // The body is sent as text/plain, NOT application/json,
+                        // and that is load-bearing. This is a cross-origin
+                        // request (page on anthonyrizk.me, API on ask.), and
+                        // application/json isn't a CORS-safelisted type — it
+                        // needs a preflight, which sendBeacon cannot perform.
+                        // Chrome drops such beacons silently. That is exactly
+                        // what happened: for a week the funnel recorded nothing
+                        // while people were visibly asking questions. text/plain
+                        // is safelisted, so it goes straight through, and the
+                        // server parses the body as JSON regardless of the
+                        // declared type.
                         if (navigator.sendBeacon) {
                             navigator.sendBeacon(
                                 EVENT_URL,
-                                new Blob([body], { type: "application/json" }),
+                                new Blob([body], { type: "text/plain" }),
                             );
                         } else {
                             fetch(EVENT_URL, {
                                 method: "POST",
-                                headers: { "Content-Type": "application/json" },
+                                headers: { "Content-Type": "text/plain" },
                                 body,
                                 keepalive: true,
                             });
