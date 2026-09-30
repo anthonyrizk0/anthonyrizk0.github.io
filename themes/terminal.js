@@ -15,7 +15,7 @@ const CSS = `
   border-top: 1px solid var(--border-mid);
   color: var(--text-mid);
 }
-.term-inner { max-width: 760px; margin: 0 auto; padding: 8px 20px 10px; }
+.term-inner { max-width: 760px; margin: 0 auto; padding: 8px 20px 20px; }
 .term-out { max-height: 11.5em; overflow-y: auto; white-space: pre-wrap; margin-bottom: 4px; }
 .term-out:empty { display: none; }
 .term-out .cmd { color: var(--text-muted); }
@@ -50,7 +50,9 @@ const CSS = `
 .term-min:hover { color: var(--blue); border-color: var(--border-accent); }
 .term-bar.is-min .term-out, .term-bar.is-min .term-line .term-in,
 .term-bar.is-min .term-ps1 { display: none; }
-.term-bar.is-min { left: auto; right: 16px; bottom: 16px; border: 1px solid var(--border-mid); }
+/* Minimised, it tucks into the corner of the glass — clear of the rounded
+   bezel the CRT layer draws around the viewport. */
+.term-bar.is-min { left: auto; right: 34px; bottom: 30px; border: 1px solid var(--border-mid); }
 .term-bar.is-min .term-inner { padding: 4px 6px; }
 .term-flash { outline: 1px dashed var(--blue); outline-offset: 6px; transition: outline-color 1.2s; }
 .term-flash.fade { outline-color: transparent; }
@@ -71,15 +73,19 @@ const PAGES = {
   pdf: "/anthony_rizk_resume_sep2026.pdf",
 };
 
-import { mountCRT } from "./terminal-crt.js";
-
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 export function mount(ctx) {
   const cleanups = [];
   // The CRT layer is its own file so the look and the prompt can evolve
-  // separately; its unmount joins ours.
-  cleanups.push(mountCRT(ctx));
+  // separately. Loaded dynamically, carrying this module's own ?v= through, so
+  // a new release of it is never served from a stale cache. Its unmount joins
+  // ours — or, if we're unmounted before it arrives, it's never mounted.
+  let unmounted = false;
+  cleanups.push(() => { unmounted = true; });
+  import(new URL("./terminal-crt.js", import.meta.url).href + new URL(import.meta.url).search)
+    .then((m) => { if (!unmounted) cleanups.push(m.mountCRT(ctx)); })
+    .catch((e) => console.warn("terminal CRT failed to load", e));
   const on = (el, ev, fn, opts) => {
     el.addEventListener(ev, fn, opts);
     cleanups.push(() => el.removeEventListener(ev, fn, opts));

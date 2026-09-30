@@ -2443,7 +2443,13 @@
                 // Modules own their own CSS (injected, removed on unmount) and
                 // must keep the page's DOM and words intact — they decorate the
                 // résumé, never replace it.
-                var MODULES = { terminal: "/themes/terminal.js" };
+                // Bump THEME_VERSION whenever anything in themes/ changes.
+                // GitHub Pages lets browsers cache these files for ten minutes,
+                // and a dynamic import() isn't reliably refetched by a hard
+                // refresh — so without a new URL, visitors can run old code
+                // against a new page.
+                var THEME_VERSION = "2026-09-30h";
+                var MODULES = { terminal: "/themes/terminal.js?v=" + THEME_VERSION };
                 var unmountCurrent = null;
                 var loadToken = 0;
 

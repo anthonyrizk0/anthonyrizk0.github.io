@@ -47,6 +47,8 @@ before first paint by the inline script at the top of `<head>`:
 pill click persists, so a shared joke link doesn't haunt the recipient. A
 stored novelty theme is written back into the URL with `replaceState`.
 
+**Bump `THEME_VERSION` in `index.html` whenever anything in `themes/` changes.** Browsers cache those files for ten minutes and a hard refresh doesn't reliably refetch a dynamic import, so without a new URL visitors run old theme code against a new page.
+
 Adding a theme touches four places, and missing one fails silently: the
 `THEMES`/`NOVELTY` arrays in the head script, `NOVELTY` in the picker script, a
 pill in `.theme-picker`, and `theme_<name>` in the event allowlist in
