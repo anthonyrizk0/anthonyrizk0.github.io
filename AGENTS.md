@@ -34,6 +34,27 @@ paths (`/pv/foo.jpg`) are the safer habit.
   advertising the MCP endpoint. It describes how the endpoint is bounded, so it
   goes stale when that changes — it has already drifted once.
 
+## Themes
+
+One axis, stored in `localStorage.theme` and set as `data-theme` on `<html>`
+before first paint by the inline script at the top of `<head>`:
+
+- unset → Classic, following the OS colour scheme
+- `light` / `dark` → Classic pinned (what the sun/moon toggle writes)
+- `terminal`, … → novelty themes that own their palette; the toggle hides
+
+`?theme=` in the URL wins for that view but is **never persisted** — only a
+pill click persists, so a shared joke link doesn't haunt the recipient. A
+stored novelty theme is written back into the URL with `replaceState`.
+
+Adding a theme touches four places, and missing one fails silently: the
+`THEMES`/`NOVELTY` arrays in the head script, `NOVELTY` in the picker script, a
+pill in `.theme-picker`, and `theme_<name>` in the event allowlist in
+`../ask-api/src/server.ts`. Theme CSS goes inside `@media screen` so print
+always comes out Classic, and it must not add or remove content — same DOM,
+same words, every theme. Classic's OS-dark rule is scoped to
+`:root:not([data-theme])` so it can't leak under a novelty theme.
+
 ## Funnel events
 
 The Ask box posts a fixed vocabulary of event names to `/event` — no free text,
