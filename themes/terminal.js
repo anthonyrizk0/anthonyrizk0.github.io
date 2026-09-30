@@ -140,12 +140,25 @@ export function mount(ctx) {
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 
   const scrollTo = (el) => {
-    el.scrollIntoView({ behavior: ctx.reducedMotion ? "auto" : "smooth", block: "start" });
+    el.scrollIntoView({ behavior: ctx.reducedMotion ? "instant" : "smooth", block: "start" });
     el.classList.add("term-flash");
     const t1 = setTimeout(() => el.classList.add("fade"), 900);
     const t2 = setTimeout(() => el.classList.remove("term-flash", "fade"), 2200);
     cleanups.push(() => { clearTimeout(t1); clearTimeout(t2); el.classList.remove("term-flash", "fade"); });
   };
+
+  // --- paths ----------------------------------------------------------------
+  // roles/ is a real directory in this filesystem: it's the Experience section,
+  // and each role is a file in it. Every command resolves paths the same way,
+  // so anything ls shows, cd and cat can reach.
+  const ROLE_DIRS = ["roles", "role", "experience"];
+  const parsePath = (arg) =>
+    (arg || "").trim().replace(/^~\/?|^\.\//, "").split("/").filter(Boolean).map((x) => x.toLowerCase());
+  const findRole = (name) => {
+    const key = slug(name);
+    return key ? roles[key] || Object.entries(roles).find(([k]) => k.startsWith(key))?.[1] : null;
+  };
+  const listRoles = () => print(Object.values(roles).map((r) => esc(r.label)).join("\n"));
 
   // --- commands -------------------------------------------------------------
   const commands = {
@@ -164,29 +177,38 @@ export function mount(ctx) {
       );
     },
     ls(arg) {
-      if (arg && /^(roles?|experience)\/?$/.test(arg)) {
-        print(Object.values(roles).map((r) => esc(r.label)).join("\n"));
-        return;
-      }
-      print(Object.keys(sections).map((s) => `${s}/`).join("  ") + "  roles/");
+      const [dir] = parsePath(arg);
+      if (!dir) return print(Object.keys(sections).map((s) => `${s}/`).join("  ") + "  roles/");
+      if (ROLE_DIRS.includes(dir)) return listRoles();
+      if (sections[slug(dir)]) return print(`${esc(dir)}/ — try <span class='hi'>cd ${esc(dir)}</span>`);
+      print(`ls: ${esc(arg)}: no such directory`, "err");
     },
     cd(arg) {
-      if (!arg || arg === "~" || arg === "/" || arg === "..") {
-        window.scrollTo({ top: 0, behavior: ctx.reducedMotion ? "auto" : "smooth" });
+      const parts = parsePath(arg);
+      if (!parts.length || parts[0] === ".." || arg.trim() === "/") {
+        window.scrollTo({ top: 0, behavior: ctx.reducedMotion ? "instant" : "smooth" });
         return;
       }
-      const target = sections[slug(arg)];
-      if (target) scrollTo(target);
-      else if (roles[slug(arg)]) commands.cat(arg);
-      else print(`cd: no such section: ${esc(arg)}`, "err");
+      const [dir, file] = parts;
+      if (ROLE_DIRS.includes(dir)) {
+        if (file) return commands.cat(file);
+        return scrollTo(sections.experience || Object.values(sections)[0]);
+      }
+      if (sections[slug(dir)]) return scrollTo(sections[slug(dir)]);
+      const role = findRole(dir);
+      if (role) return scrollTo(role.el);
+      print(`cd: no such directory: ${esc(arg)}`, "err");
     },
     cat(arg) {
-      if (!arg) return print("cat: which role? try <span class='hi'>ls roles</span>", "err");
-      const key = slug(arg);
-      const hit = roles[key] || Object.entries(roles).find(([k]) => k.startsWith(key))?.[1];
-      if (hit) scrollTo(hit.el);
-      else if (sections[key]) scrollTo(sections[key]);
-      else print(`cat: ${esc(arg)}: no such role`, "err");
+      const parts = parsePath(arg);
+      if (!parts.length) return print("cat: which role? try <span class='hi'>ls roles</span>", "err");
+      // "cat roles" reads the directory; "cat roles/greg" and "cat greg" read a role.
+      if (ROLE_DIRS.includes(parts[0]) && !parts[1]) return listRoles();
+      const name = ROLE_DIRS.includes(parts[0]) ? parts[1] : parts[0];
+      const role = findRole(name);
+      if (role) return scrollTo(role.el);
+      if (sections[slug(name)]) return scrollTo(sections[slug(name)]);
+      print(`cat: ${esc(arg)}: no such role`, "err");
     },
     ask(arg) {
       const q = (arg || "").trim();
@@ -287,9 +309,9 @@ export function mount(ctx) {
       parts.length <= 1
         ? Object.keys(commands).filter((c) => c.length > 1)
         : parts[0] === "cd"
-          ? [...Object.keys(sections), "~"]
+          ? [...Object.keys(sections), "roles", "~"]
           : parts[0] === "cat"
-            ? Object.keys(roles)
+            ? ["roles", ...Object.keys(roles)]
             : parts[0] === "open"
               ? Object.keys(PAGES)
               : parts[0] === "ls"

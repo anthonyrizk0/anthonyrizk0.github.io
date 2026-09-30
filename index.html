@@ -160,8 +160,12 @@
                 --orange-dim: color-mix(in srgb, var(--orange) 12%, transparent);
             }
 
-            html {
-                scroll-behavior: smooth;
+            /* Smooth in-page scrolling only for people who haven't asked for
+               less motion — otherwise every anchor jump animates regardless. */
+            @media (prefers-reduced-motion: no-preference) {
+                html {
+                    scroll-behavior: smooth;
+                }
             }
 
             body {
