@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    font-family: Inter, sans-serif; color: #c0caf5;
+    background:
+      radial-gradient(ellipse 70% 55% at 50% -5%, rgba(122,162,247,.16), transparent),
+      radial-gradient(ellipse 55% 45% at 90% 105%, rgba(187,154,247,.12), transparent),
+      radial-gradient(circle, rgba(122,162,247,.09) 1px, transparent 1px) 0 0 / 28px 28px,
+      #0d0e1a;
+    display: flex; align-items: center; justify-content: center;
+  }
+  body::before {           /* the gradient rule across the top, as on the site */
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(to right, transparent, #bb9af7 20%, #7aa2f7 50%, #73daca 80%, transparent);
+  }
+  .plate {
+    width: 920px; text-align: center; padding: 58px 60px 50px;
+    border: 1px solid rgba(122,162,247,.18); border-radius: 22px;
+    background: linear-gradient(135deg, rgba(122,162,247,.08), rgba(187,154,247,.08));
+    box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .eyebrow { font-size: 17px; font-weight: 500; letter-spacing: 7px; color: #7c83ad; margin-bottom: 18px; }
+  h1 {
+    font-family: "Space Grotesk", sans-serif; font-size: 96px; font-weight: 700; letter-spacing: -3px; line-height: 1.05;
+    background: linear-gradient(135deg, #7aa2f7, #bb9af7 55%, #73daca);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { font-size: 27px; color: #9aa5ce; margin-top: 20px; line-height: 1.45; }
+  .tags { margin-top: 24px; font-size: 17px; font-weight: 500; letter-spacing: 3px; color: #73daca; }
+  .ask {
+    display: inline-flex; align-items: center; gap: 12px; margin-top: 34px;
+    padding: 14px 30px; border-radius: 12px; font-size: 24px; font-weight: 500;
+    color: #73daca; border: 1.5px solid rgba(115,218,202,.5); background: rgba(115,218,202,.1);
+  }
+  .url { position: absolute; right: 46px; bottom: 30px; font-family: "JetBrains Mono", monospace; font-size: 19px; color: #565f89; }
+</style></head><body>
+  <div class="plate">
+    <div class="eyebrow">STAFF SOFTWARE ENGINEER &nbsp;·&nbsp; FOUNDER</div>
+    <h1>Anthony Rizk</h1>
+    <div class="sub">I build mobile products and the systems behind them.</div>
+    <div class="tags">EX-META · GOOGLE · CLASSDOJO</div>
+    <div class="ask">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.7 5.3a3 3 0 0 0 1.9 1.9l5.3 1.7-5.3 1.7a3 3 0 0 0-1.9 1.9L12 21.4l-1.7-5.4a3 3 0 0 0-1.9-1.9L3.1 12.4l5.3-1.7a3 3 0 0 0 1.9-1.9z"/><path d="M18.5 3v3.2M20.1 4.6h-3.2"/></svg>
+      Ask my résumé anything
+    </div>
+  </div>
+  <div class="url">anthonyrizk.me</div>
+</body></html>
