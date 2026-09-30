@@ -72,6 +72,12 @@ they add is hidden in print. Rapid theme switching is handled by the loader
 WebGL can't read DOM pixels, so a shader can't run *over* the live text —
 shader layers go behind or above it, and real-text effects use CSS/SVG filters.
 
+**Reach for CSS before WebGL**, and animate only `transform` and `opacity`.
+Terminal's CRT layer started as a WebGL shader and was replaced: it held 60fps
+when the page loaded in Terminal but fell to 1–10fps after picking Terminal from
+Classic, and nothing about the canvas fixed it. The same look in CSS holds 60fps
+in every case. Keep WebGL for effects that genuinely need per-pixel work.
+
 ## Funnel events
 
 The Ask box posts a fixed vocabulary of event names to `/event` — no free text,

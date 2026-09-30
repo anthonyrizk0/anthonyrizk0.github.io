@@ -71,10 +71,15 @@ const PAGES = {
   pdf: "/anthony_rizk_resume_sep2026.pdf",
 };
 
+import { mountCRT } from "./terminal-crt.js";
+
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 export function mount(ctx) {
   const cleanups = [];
+  // The CRT layer is its own file so the look and the prompt can evolve
+  // separately; its unmount joins ours.
+  cleanups.push(mountCRT(ctx));
   const on = (el, ev, fn, opts) => {
     el.addEventListener(ev, fn, opts);
     cleanups.push(() => el.removeEventListener(ev, fn, opts));
