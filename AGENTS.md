@@ -55,6 +55,23 @@ always comes out Classic, and it must not add or remove content — same DOM,
 same words, every theme. Classic's OS-dark rule is scoped to
 `:root:not([data-theme])` so it can't leak under a novelty theme.
 
+### Theme modules
+
+A theme can optionally have a JS module in `themes/<name>.js`, registered in
+`MODULES` in the picker script. It's `import()`ed only when that theme is
+active — Classic visitors download none of it — and after the CSS has already
+painted, so a failed module leaves a working themed page.
+
+Contract: `export function mount(ctx)` returns an `unmount` that removes
+*everything* it created — elements, injected `<style>`, listeners, timers,
+animation frames, body classes. `ctx` has `reducedMotion` and `setTheme(name)`.
+Modules decorate the résumé and never replace or alter its content; anything
+they add is hidden in print. Rapid theme switching is handled by the loader
+(a stale import is dropped), but a module that leaks on unmount will stack up.
+
+WebGL can't read DOM pixels, so a shader can't run *over* the live text —
+shader layers go behind or above it, and real-text effects use CSS/SVG filters.
+
 ## Funnel events
 
 The Ask box posts a fixed vocabulary of event names to `/event` — no free text,

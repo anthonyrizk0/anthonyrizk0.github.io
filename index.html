@@ -2399,28 +2399,72 @@
                     });
                 }
 
+                function setTheme(pick) {
+                    if (pick === current()) return;
+                    try {
+                        var url = new URL(location.href);
+                        if (pick === "classic") {
+                            root.removeAttribute("data-theme");
+                            localStorage.removeItem("theme");
+                            url.searchParams.delete("theme");
+                        } else {
+                            root.setAttribute("data-theme", pick);
+                            localStorage.setItem("theme", pick);
+                            url.searchParams.set("theme", pick);
+                        }
+                        history.replaceState(null, "", url);
+                    } catch (e) {}
+                    sync();
+                    applyModule();
+                    document.dispatchEvent(new CustomEvent("theme-picked", { detail: pick }));
+                }
+
+                // --- theme modules ------------------------------------------
+                // A theme is CSS first; a module is an optional enhancement —
+                // interaction, canvas, WebGL — loaded only when that theme is
+                // active, so Classic visitors download none of it. The CSS has
+                // already painted by then; if the module fails, the themed page
+                // still stands on its own.
+                //
+                // Contract: mount(ctx) returns an unmount function that removes
+                // every element, listener, timer and animation frame it created.
+                // Modules own their own CSS (injected, removed on unmount) and
+                // must keep the page's DOM and words intact — they decorate the
+                // résumé, never replace it.
+                var MODULES = { terminal: "/themes/terminal.js" };
+                var unmountCurrent = null;
+                var loadToken = 0;
+
+                function applyModule() {
+                    var token = ++loadToken; // invalidates any load still in flight
+                    if (unmountCurrent) {
+                        try { unmountCurrent(); } catch (e) { console.warn(e); }
+                        unmountCurrent = null;
+                    }
+                    var theme = current();
+                    var src = MODULES[theme];
+                    if (!src) return;
+                    import(src)
+                        .then(function (mod) {
+                            // Switched away while it was downloading — drop it.
+                            if (token !== loadToken || current() !== theme) return;
+                            unmountCurrent = mod.mount({
+                                reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+                                setTheme: setTheme,
+                            }) || null;
+                        })
+                        .catch(function (e) {
+                            console.warn("theme module failed; staying CSS-only", e);
+                        });
+                }
+
                 pills.forEach(function (p) {
                     p.addEventListener("click", function () {
-                        var pick = p.dataset.pick;
-                        if (pick === current()) return;
-                        try {
-                            var url = new URL(location.href);
-                            if (pick === "classic") {
-                                root.removeAttribute("data-theme");
-                                localStorage.removeItem("theme");
-                                url.searchParams.delete("theme");
-                            } else {
-                                root.setAttribute("data-theme", pick);
-                                localStorage.setItem("theme", pick);
-                                url.searchParams.set("theme", pick);
-                            }
-                            history.replaceState(null, "", url);
-                        } catch (e) {}
-                        sync();
-                        document.dispatchEvent(new CustomEvent("theme-picked", { detail: pick }));
+                        setTheme(p.dataset.pick);
                     });
                 });
                 sync();
+                applyModule();
             })();
         </script>
     </body>
