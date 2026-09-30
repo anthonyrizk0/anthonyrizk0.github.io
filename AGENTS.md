@@ -97,17 +97,27 @@ in every case. Keep WebGL for effects that genuinely need per-pixel work.
 
 ## /phone
 
-`phone.html` is the résumé as a phone home screen, and it has **no content of
-its own**: it fetches `/` and builds every app from the résumé's markup. The
-contract is these class names — `.exp-item`, `.company` (+ `.acq`), `.period`,
-`.role`, `.desc li`, `.tech`, `.skill-tag`, `.pub-item`, `.edu-item`,
-`.links a`, `.ask-chip`. Renaming any of them breaks the phone silently, so
-check `/phone` after changing résumé structure.
+`phone.html` is a shell with swappable **devices**. It has no content of its
+own: it fetches `/` once, reads it into a plain data model in `readResume()`,
+and hands that to the active device. The contract with the résumé is its class
+names — `.exp-item`, `.company` (+ `.acq`), `.period`, `.role`, `.desc li`,
+`.tech`, `.skill-tag`, `.pub-item`, `.edu-item`, `.links a`, `.ask-chip`.
+Renaming any of them breaks every device silently, so check `/phone` after
+changing résumé structure.
 
-It sits in the theme row as "Phone ↗" because that's what it is to a visitor,
-but structurally it's a separate page. Spotlight hands questions to the résumé
-via `/?ask=…#ask` rather than running its own Ask client — one Ask client, not
-two. It's `noindex` and out of the sitemap while it's a first cut.
+Devices live in `phone/<name>.js`, registered in `DEVICES` in `phone.html`, and
+export `mount(el, ctx)` returning an unmount that removes everything it made.
+Only the active device is downloaded; bump `VERSION` in `phone.html` when
+anything in `phone/` changes. `?device=` shows a device for that view; picking
+one persists it. Each device also reports `phone_<name>`, which needs adding to
+the event allowlist in `../ask-api/src/server.ts`.
+
+Nothing answers questions inside the phone yet: `ctx.ask()` hands them to the
+résumé via `/?ask=…#ask`. Answering in place means moving the Ask client out of
+`index.html` into a shared script first — not copying it.
+
+"Phone ↗" sits in the theme row because to a visitor it is one. `noindex` and
+out of the sitemap while it's a first cut. Homage, not copies: no logos.
 
 ## Funnel events
 

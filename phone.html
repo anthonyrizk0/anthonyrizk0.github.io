@@ -15,246 +15,65 @@
             rel="stylesheet"
         />
         <!--
-          /phone — the résumé as a phone.
+          /phone — the résumé as a phone, with swappable devices.
 
-          It has no content of its own. On load it fetches the résumé (/) and
-          builds every app from the real sections: each .exp-item is an app,
-          Skills, Publications and Education are apps, the contact row is the
-          dock, and the Ask box's suggested questions become Spotlight's. Edit
-          the résumé and this follows on the next load. The contract is the
-          résumé's class names (.exp-item, .company, .period, .role, .desc,
-          .tech, .skill-tag, .pub-item, .edu-item, .links a, .ask-chip) — rename
-          those and this page needs updating too.
+          This page is a shell. It has no content of its own: it fetches the
+          résumé (/) once and reads it into a plain data model — roles, skills,
+          books, education, contact links, the Ask box's suggested questions —
+          and hands that to whichever device is active. Edit the résumé and
+          every device follows on the next load.
 
-          Spotlight doesn't answer questions itself: it hands the question to
-          the résumé's Ask box via /?ask=. The Ask client (Turnstile, session,
-          streaming) lives in index.html, and a second copy here would drift.
+          The contract with the résumé is its class names (.exp-item, .company,
+          .acq, .period, .role, .desc li, .tech, .skill-tag, .pub-item,
+          .edu-item, .links a, .ask-chip). Rename those and readResume() below
+          needs updating.
+
+          Devices live in phone/<name>.js and are registered in DEVICES. Each
+          exports mount(el, ctx) returning an unmount that removes everything
+          it made. Only the active device's file is downloaded.
+
+          Questions don't get answered here yet: ctx.ask() hands them to the
+          résumé's Ask box via /?ask=. The Ask client lives in index.html and a
+          second copy would drift; answering in place means moving it into a
+          shared script first.
         -->
         <style>
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            :root {
-                --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
-                --glass: rgba(255, 255, 255, 0.14);
-                --glass-strong: rgba(30, 30, 40, 0.72);
-                --text: #fff;
-                --muted: rgba(255, 255, 255, 0.62);
-                --app-bg: #f2f2f7;
-                --card: #fff;
-                --ink: #1c1c1e;
-                --ink-muted: #6e6e73;
-                --sep: rgba(60, 60, 67, 0.18);
-                --tint: #0a84ff;
-            }
             html, body { height: 100%; }
             body {
-                font-family: var(--ui);
-                color: var(--text);
+                font-family: -apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif;
+                color: #fff;
                 background:
                     radial-gradient(ellipse 60% 50% at 50% 0%, #26263a, transparent 70%),
                     radial-gradient(ellipse 50% 40% at 80% 100%, #1d2a3a, transparent 70%),
                     #0b0b12;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 18px;
-                min-height: 100vh;
-                padding: 28px 16px;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 16px; min-height: 100vh; padding: 28px 16px;
                 -webkit-font-smoothing: antialiased;
             }
-            a { color: inherit; }
             .back {
                 position: fixed; top: 18px; left: 20px;
-                font: 500 0.85rem var(--ui); color: var(--muted); text-decoration: none;
+                font: 500 0.85rem Inter, system-ui, sans-serif; color: rgba(255,255,255,.62); text-decoration: none;
             }
             .back:hover { color: #fff; }
-            .caption { font-size: 0.8rem; color: var(--muted); text-align: center; }
+            #device { display: flex; justify-content: center; }
+            .switcher { display: flex; gap: 8px; align-items: center; font: 500 12px Inter, system-ui, sans-serif; color: rgba(255,255,255,.5); }
+            .switcher button {
+                font: inherit; color: rgba(255,255,255,.7); background: none;
+                border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 4px 12px; cursor: pointer;
+            }
+            .switcher button[aria-pressed="true"] { color: #fff; border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.08); }
+            .caption { font-size: 0.8rem; color: rgba(255,255,255,.55); text-align: center; }
             .caption a { color: #9ec5ff; }
-
-            /* ── The device ───────────────────────────────────────────── */
-            .device {
-                width: 390px; height: 820px; max-height: calc(100vh - 90px);
-                border-radius: 56px; padding: 12px;
-                background: linear-gradient(145deg, #3a3a44, #16161c);
-                box-shadow:
-                    0 0 0 2px #4a4a55,
-                    0 40px 90px rgba(0, 0, 0, 0.6),
-                    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-                flex-shrink: 0;
-            }
-            .screen {
-                position: relative; width: 100%; height: 100%;
-                border-radius: 44px; overflow: hidden;
-                background:
-                    radial-gradient(ellipse 90% 60% at 20% 10%, #5b4bd6 0%, transparent 60%),
-                    radial-gradient(ellipse 80% 70% at 90% 90%, #0fa3a3 0%, transparent 60%),
-                    radial-gradient(ellipse 70% 60% at 70% 30%, #d6477a 0%, transparent 55%),
-                    #1b1b3a;
-                user-select: none; -webkit-user-select: none;
-            }
-            /* On a real phone there's no frame: the page *is* the phone. */
+            .error { padding: 40px; text-align: center; }
+            .error a { color: #9ec5ff; }
+            /* On a real phone the page *is* the device: no frame, no chrome
+               around it. Devices offer their own way to switch and leave. */
             @media (max-width: 600px) {
-                body { padding: 0; gap: 0; }
-                .back, .caption { display: none; }
-                .device {
-                    width: 100vw; height: 100vh; height: 100dvh; max-height: none;
-                    border-radius: 0; padding: 0; background: none; box-shadow: none;
-                }
-                .screen { border-radius: 0; }
-                .island { display: none; }
+                body { padding: 0; gap: 0; justify-content: flex-start; }
+                .back, .switcher, .caption { display: none; }
+                #device { width: 100vw; height: 100vh; height: 100dvh; }
             }
-
-            /* ── Status bar ───────────────────────────────────────────── */
-            .status {
-                position: absolute; top: 0; left: 0; right: 0; z-index: 50;
-                height: 50px; padding: 16px 30px 0;
-                display: flex; justify-content: space-between; align-items: flex-start;
-                font: 600 15px var(--ui); pointer-events: none;
-                padding-top: max(16px, env(safe-area-inset-top));
-            }
-            .status.dark { color: var(--ink); }
-            .island {
-                position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-                width: 118px; height: 34px; border-radius: 20px; background: #000;
-            }
-            .sys { display: flex; gap: 6px; align-items: center; }
-            .sys svg { display: block; }
-
-            /* ── Layers: lock, home, app, spotlight ───────────────────── */
-            .layer { position: absolute; inset: 0; }
-            [hidden] { display: none !important; }
-
-            /* Lock screen */
-            .lock {
-                display: flex; flex-direction: column; align-items: center;
-                padding: 88px 18px 40px; cursor: pointer;
-                background: rgba(0, 0, 0, 0.12);
-                transition: transform 0.45s cubic-bezier(.2,.8,.2,1), opacity 0.45s;
-            }
-            .lock.gone { transform: translateY(-100%); opacity: 0; }
-            .lock .date { font: 600 18px var(--ui); color: rgba(255,255,255,.85); }
-            .lock .time { font: 700 88px/1 var(--ui); letter-spacing: -2px; margin-top: 2px; }
-            .notif {
-                margin-top: auto; width: 100%;
-                background: var(--glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-                border-radius: 22px; padding: 12px 14px;
-                display: flex; gap: 11px; align-items: center;
-                animation: notif-in 0.6s 1.2s cubic-bezier(.2,.8,.2,1) both;
-            }
-            .notif .icon { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; }
-            .notif .who { font: 600 14px var(--ui); display: flex; justify-content: space-between; }
-            .notif .who span { font-weight: 400; color: var(--muted); font-size: 13px; }
-            .notif .msg { font-size: 14px; color: rgba(255,255,255,.9); }
-            @keyframes notif-in { from { opacity: 0; transform: translateY(20px) scale(.96); } }
-            .hint { margin-top: 26px; font-size: 13px; color: var(--muted); animation: bob 2.4s ease-in-out infinite; }
-            @keyframes bob { 50% { transform: translateY(-4px); } }
-            .lock-link { margin-top: 12px; font-size: 12px; color: var(--muted); }
-
-            /* Home screen */
-            .home {
-                display: flex; flex-direction: column;
-                padding: 64px 22px 14px;
-                padding-top: max(64px, calc(env(safe-area-inset-top) + 44px));
-                transition: transform 0.35s, filter 0.35s;
-            }
-            .home.behind { transform: scale(0.94); filter: blur(6px) brightness(.8); }
-            .search {
-                align-self: center; margin-bottom: 20px;
-                display: flex; align-items: center; gap: 6px;
-                padding: 6px 14px; border-radius: 16px;
-                background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-                font-size: 13px; color: rgba(255,255,255,.85); cursor: pointer; border: none;
-            }
-            .grid {
-                display: grid; grid-template-columns: repeat(4, 1fr);
-                gap: 18px 10px; align-content: start;
-            }
-            .appicon { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; border: none; background: none; color: inherit; font: inherit; }
-            .appicon .tile {
-                width: 60px; height: 60px; border-radius: 15px;
-                display: grid; place-items: center;
-                font: 700 26px var(--ui); color: #fff;
-                box-shadow: 0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3);
-                transition: transform 0.15s;
-            }
-            .appicon:active .tile { transform: scale(0.9); }
-            .appicon .label {
-                font: 500 11.5px var(--ui); max-width: 74px;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-                text-shadow: 0 1px 3px rgba(0,0,0,.4);
-            }
-            .dock {
-                margin-top: auto;
-                display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-                padding: 14px 12px; border-radius: 32px;
-                background: var(--glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            }
-            .dock .label { display: none; }
-
-            /* App screens */
-            .app {
-                background: var(--app-bg); color: var(--ink);
-                overflow-y: auto; -webkit-overflow-scrolling: touch;
-                padding: 60px 0 60px;
-                padding-top: max(60px, calc(env(safe-area-inset-top) + 40px));
-                transition: transform 0.38s cubic-bezier(.2,.8,.2,1), opacity 0.3s, border-radius 0.38s;
-            }
-            .app.opening { transform: scale(0.15); opacity: 0; border-radius: 40px; }
-            .nav { display: flex; align-items: center; padding: 0 12px; height: 34px; }
-            .nav button {
-                border: none; background: none; color: var(--tint);
-                font: 400 17px var(--ui); cursor: pointer; display: flex; align-items: center; gap: 2px;
-            }
-            .app h1 { font: 700 32px var(--ui); letter-spacing: -0.5px; padding: 4px 18px 2px; }
-            .app .sub { padding: 0 18px; color: var(--ink-muted); font-size: 15px; }
-            .app .meta { padding: 2px 18px 0; color: var(--ink-muted); font-size: 13px; }
-            .group { margin: 22px 16px 0; background: var(--card); border-radius: 12px; overflow: hidden; }
-            .group-title { margin: 22px 32px -14px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--ink-muted); }
-            .row { padding: 12px 16px; font-size: 15.5px; line-height: 1.4; border-bottom: 0.5px solid var(--sep); }
-            .row:last-child { border-bottom: none; }
-            .row a { color: var(--tint); text-decoration: none; }
-            a.row { display: flex; justify-content: space-between; color: var(--ink); text-decoration: none; }
-            a.row::after { content: "›"; color: #c7c7cc; font-size: 20px; line-height: 1; }
-            .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
-            .chip { background: #e9e9ef; border-radius: 8px; padding: 5px 10px; font-size: 13.5px; color: #3a3a3c; }
-            .homebar {
-                position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
-                width: 134px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.8);
-                z-index: 60; border: none; cursor: pointer;
-                bottom: max(8px, env(safe-area-inset-bottom));
-            }
-            .homebar.dark { background: rgba(0,0,0,.75); }
-            .homebar::before { content: ""; position: absolute; inset: -14px -20px; } /* bigger touch target */
-
-            /* Spotlight */
-            .spotlight {
-                padding: 64px 18px 20px; background: rgba(10,10,20,.35);
-                padding-top: max(64px, calc(env(safe-area-inset-top) + 44px));
-                display: flex; flex-direction: column; gap: 14px;
-            }
-            .spot-field {
-                display: flex; align-items: center; gap: 8px;
-                background: var(--glass-strong); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-                border-radius: 14px; padding: 10px 12px;
-            }
-            .spot-field input {
-                flex: 1; min-width: 0; background: none; border: none; outline: none;
-                color: #fff; font: 400 17px var(--ui);
-            }
-            .spot-field input::placeholder { color: rgba(255,255,255,.5); }
-            .spot-field button { border: none; background: none; color: #9ec5ff; font: 500 15px var(--ui); cursor: pointer; }
-            .spot-head { font: 600 13px var(--ui); color: var(--muted); margin: 6px 4px -4px; }
-            .spot-list { background: var(--glass-strong); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 14px; overflow: hidden; }
-            .spot-list button {
-                display: block; width: 100%; text-align: left; border: none; background: none; color: #fff;
-                font: 400 15px var(--ui); padding: 12px 14px; cursor: pointer;
-                border-bottom: 0.5px solid rgba(255,255,255,.12);
-            }
-            .spot-list button:last-child { border-bottom: none; }
-            .spot-note { font-size: 12px; color: var(--muted); padding: 0 4px; }
-
-            .error { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; font-size: 15px; }
-
             @media (prefers-reduced-motion: reduce) {
                 *, *::before, *::after { animation: none !important; transition: none !important; }
             }
@@ -262,284 +81,147 @@
     </head>
     <body>
         <a class="back" href="/">← résumé</a>
-        <div class="device">
-            <div class="screen" id="screen">
-                <div class="island" aria-hidden="true"></div>
-                <div class="status" id="status" aria-hidden="true">
-                    <span class="clock" data-clock="short"></span>
-                    <span class="sys">
-                        <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
-                        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2" fill="currentColor"/><rect x="23" y="4" width="1.5" height="4" rx=".75" fill="currentColor" opacity=".4"/></svg>
-                    </span>
-                </div>
-
-                <section class="layer lock" id="lock" aria-label="Lock screen — tap to open">
-                    <div class="date" data-clock="date"></div>
-                    <div class="time" data-clock="short"></div>
-                    <div class="notif">
-                        <div class="icon" style="background: linear-gradient(135deg, #7aa2f7, #bb9af7)"></div>
-                        <div style="flex: 1">
-                            <div class="who">Anthony <span>now</span></div>
-                            <div class="msg">Ask me anything about my work.</div>
-                        </div>
-                    </div>
-                    <div class="hint">Swipe up or tap to open</div>
-                    <a class="lock-link" href="/" onclick="event.stopPropagation()">View the classic résumé</a>
-                </section>
-
-                <section class="layer home" id="home" hidden aria-label="Home screen">
-                    <button class="search" id="open-search" type="button">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                        Search
-                    </button>
-                    <div class="grid" id="grid"></div>
-                    <div class="dock" id="dock"></div>
-                </section>
-
-                <section class="layer app" id="app" hidden aria-live="polite"></section>
-
-                <section class="layer spotlight" id="spotlight" hidden aria-label="Search">
-                    <form class="spot-field" id="spot-form">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                        <input id="spot-input" type="text" maxlength="500" autocomplete="off" placeholder="Ask about Anthony…" />
-                        <button type="button" id="spot-cancel">Cancel</button>
-                    </form>
-                    <div class="spot-head">Suggestions</div>
-                    <div class="spot-list" id="spot-list"></div>
-                    <div class="spot-note">Answers open in the résumé's Ask box.</div>
-                </section>
-
-                <button class="homebar" id="homebar" type="button" aria-label="Go home"></button>
-            </div>
-        </div>
+        <div id="device"></div>
+        <div class="switcher" id="switcher" aria-label="Device"><span>Device</span></div>
         <p class="caption">The résumé, as a phone · <a href="/">back to the classic résumé</a></p>
 
         <script>
             (function () {
-                var $ = function (id) { return document.getElementById(id); };
-                var screen = $("screen"), lock = $("lock"), home = $("home"), app = $("app"),
-                    spot = $("spotlight"), status = $("status"), homebar = $("homebar");
-                var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-                // ── Clock ──────────────────────────────────────────────
-                function tick() {
-                    var now = new Date();
-                    var short = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M$/i, "");
-                    var date = now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
-                    document.querySelectorAll('[data-clock="short"]').forEach(function (el) { el.textContent = short; });
-                    document.querySelectorAll('[data-clock="date"]').forEach(function (el) { el.textContent = date; });
-                }
-                tick(); setInterval(tick, 15000);
-
-                // Funnel: same fixed-vocabulary endpoint as the résumé.
-                try {
-                    navigator.sendBeacon("https://ask.anthonyrizk.me/event",
-                        new Blob([JSON.stringify({ name: "phone_view" })], { type: "text/plain" }));
-                } catch (e) {}
-
-                // ── Colours for app tiles. No logos: letters on gradients. ──
-                var PALETTE = {
-                    classdojo: ["#6d5dfc", "#4a3fd6"], greg: ["#3ec46d", "#1f8f4a"],
-                    facebook: ["#3b7cff", "#1e4fd1"], google: ["#f4b400", "#e1573a"],
-                    cape: ["#2b2d42", "#5c6078"], tableau: ["#e8762c", "#c2410c"],
-                    vmware: ["#607d8b", "#37474f"], zeebumobile: ["#ff6fa5", "#d6336c"],
-                    rovemobile: ["#14b8a6", "#0f766e"], bitheads: ["#8b5cf6", "#6d28d9"],
-                    truecontext: ["#0ea5e9", "#0369a1"],
+                // Bump when anything in phone/ changes: dynamic imports aren't
+                // reliably refetched by a hard refresh.
+                var VERSION = "2026-10-01b";
+                var DEVICES = {
+                    iphone: { label: "iPhone", module: "/phone/iphone.js" },
+                    blackberry: { label: "BlackBerry", module: "/phone/blackberry.js" },
                 };
-                function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, ""); }
-                function tint(name) {
-                    var p = PALETTE[slug(name)];
-                    if (!p) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360; p = ["hsl(" + h + ",70%,55%)", "hsl(" + ((h + 30) % 360) + ",70%,40%)"]; }
-                    return "linear-gradient(135deg," + p[0] + "," + p[1] + ")";
-                }
+                var DEFAULT = "iphone";
+
                 function text(el) { return el ? el.textContent.replace(/\s+/g, " ").trim() : ""; }
-                function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+                function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, ""); }
 
-                // ── Build everything from the résumé ────────────────────
-                var apps = {}, dockApps = [], suggestions = [];
-
-                function fromResume(doc) {
+                // ── The résumé, read once into plain data ────────────────
+                function readResume(doc) {
+                    var data = { roles: [], skills: [], books: [], education: [], links: {}, suggestions: [] };
+                    var seen = {};
                     doc.querySelectorAll(".exp-item").forEach(function (item) {
                         var c = item.querySelector(".company");
-                        var name = text(c && c.firstChild ? { textContent: c.firstChild.textContent } : c).split(/\s[—(]/)[0];
-                        var acq = text(item.querySelector(".company .acq"));
+                        var name = (c && c.firstChild ? c.firstChild.textContent : text(c)).replace(/\s+/g, " ").trim().split(/\s[—(]/)[0];
                         var period = text(item.querySelector(".period"));
-                        var key = slug(name); var label = name;
-                        if (apps[key]) { key += period.slice(-4); label = name + " ’" + period.slice(-2); }
-                        var bullets = Array.prototype.map.call(item.querySelectorAll(".desc li"), text);
-                        var tech = text(item.querySelector(".tech")).split(/\s·\s/).filter(Boolean);
-                        apps[key] = {
-                            label: label, glyph: name.charAt(0), bg: tint(name),
-                            render: function () {
-                                return head(name, text(item.querySelector(".role")), [period, acq].filter(Boolean).join(" · ")) +
-                                    (bullets.length ? '<div class="group">' + bullets.map(function (b) { return '<div class="row">' + esc(b) + "</div>"; }).join("") + "</div>" : "") +
-                                    (tech.length ? '<div class="group-title">Built with</div><div class="group"><div class="chips">' + tech.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("") + "</div></div>" : "");
-                            },
-                        };
+                        var key = slug(name), label = name;
+                        if (seen[key]) { key += period.slice(-4); label = name + " ’" + period.slice(-2); }
+                        seen[key] = true;
+                        data.roles.push({
+                            key: key, name: name, label: label,
+                            acq: text(item.querySelector(".company .acq")),
+                            period: period,
+                            title: text(item.querySelector(".role")),
+                            bullets: Array.prototype.map.call(item.querySelectorAll(".desc li"), text),
+                            tech: text(item.querySelector(".tech")).split(/\s·\s/).filter(Boolean),
+                        });
                     });
-
-                    var skills = Array.prototype.map.call(doc.querySelectorAll(".skill-tag"), text);
-                    if (skills.length) apps.skills = { label: "Skills", glyph: "✦", bg: "linear-gradient(135deg,#475569,#1e293b)",
-                        render: function () { return head("Skills") + '<div class="group"><div class="chips">' + skills.map(function (s) { return '<span class="chip">' + esc(s) + "</span>"; }).join("") + "</div></div>"; } };
-
-                    var pubs = doc.querySelectorAll(".pub-item");
-                    if (pubs.length) apps.books = { label: "Books", glyph: "B", bg: "linear-gradient(135deg,#f97316,#b45309)",
-                        render: function () { return head("Books") + Array.prototype.map.call(pubs, function (p) {
-                            return '<div class="group"><div class="row"><b>' + esc(text(p.querySelector(".title"))) + "</b><br>" +
-                                esc([text(p.querySelector(".publisher")), text(p.querySelector(".pub-year"))].join(" · ")) + '</div><div class="row">' + esc(text(p.querySelector(".pub-note"))) + "</div></div>";
-                        }).join(""); } };
-
-                    var edu = doc.querySelectorAll(".edu-item");
-                    if (edu.length) apps.education = { label: "Education", glyph: "E", bg: "linear-gradient(135deg,#eab308,#a16207)",
-                        render: function () { return head("Education") + Array.prototype.map.call(edu, function (e) {
-                            return '<div class="group"><div class="row"><b>' + esc(text(e.querySelector(".company"))) + "</b> · " + esc(text(e.querySelector(".period"))) + '</div><div class="row">' + esc(text(e.querySelector(".role"))) + "</div></div>";
-                        }).join(""); } };
-
-                    apps.settings = { label: "Settings", glyph: "⚙", bg: "linear-gradient(135deg,#8e8e93,#48484a)",
-                        render: function () {
-                            var themes = [["Classic", ""], ["Terminal", "terminal"], ["Blueprint", "blueprint"]];
-                            return head("Settings") +
-                                '<div class="group-title">Theme</div><div class="group">' +
-                                themes.map(function (t) { return '<a class="row" href="/' + (t[1] ? "?theme=" + t[1] : "?theme=classic") + '">' + t[0] + "</a>"; }).join("") +
-                                '</div><div class="group-title">This phone</div><div class="group">' +
-                                '<a class="row" href="/">Back to the classic résumé</a>' +
-                                '<a class="row" href="/how-ask-works">How the Ask box works</a>' +
-                                '<a class="row" href="/mcp">Connect an agent (MCP)</a></div>';
-                        } };
-
-                    // Dock: the résumé's own contact row, plus Ask.
+                    data.skills = Array.prototype.map.call(doc.querySelectorAll(".skill-tag"), text);
+                    doc.querySelectorAll(".pub-item").forEach(function (p) {
+                        data.books.push({ title: text(p.querySelector(".title")), publisher: text(p.querySelector(".publisher")), year: text(p.querySelector(".pub-year")), note: text(p.querySelector(".pub-note")) });
+                    });
+                    doc.querySelectorAll(".edu-item").forEach(function (e) {
+                        data.education.push({ school: text(e.querySelector(".company")), year: text(e.querySelector(".period")), degree: text(e.querySelector(".role")) });
+                    });
                     doc.querySelectorAll(".links a").forEach(function (a) {
-                        var label = text(a), href = a.getAttribute("href") || "";
-                        if (/linkedin/i.test(href)) dockApps.push({ label: "LinkedIn", glyph: "in", bg: "linear-gradient(135deg,#2d7fd8,#1452a3)", href: href });
-                        else if (/^mailto:/i.test(href)) dockApps.push({ label: "Mail", glyph: "✉", bg: "linear-gradient(135deg,#4fb6ff,#1a7bea)", href: href });
-                        else if (/\.pdf$/i.test(href)) dockApps.push({ label: "PDF", glyph: "▤", bg: "linear-gradient(135deg,#ff5f57,#c7302a)", href: href });
-                        void label;
+                        var href = a.getAttribute("href") || "";
+                        if (/linkedin/i.test(href)) data.links.linkedin = href;
+                        else if (/^mailto:/i.test(href)) data.links.mail = href;
+                        else if (/\.pdf$/i.test(href)) data.links.pdf = href;
                     });
-                    dockApps.push({ label: "Ask", glyph: "✦", bg: "linear-gradient(135deg,#73daca,#2a9d8f)", action: openSpotlight });
-
-                    // Spotlight suggestions are the Ask box's own chips.
                     doc.querySelectorAll(".ask-chip").forEach(function (chip) {
-                        suggestions.push(chip.dataset.question || text(chip));
+                        data.suggestions.push(chip.dataset.question || text(chip));
                     });
+                    return data;
                 }
 
-                function head(title, sub, meta) {
-                    return '<div class="nav"><button type="button" data-home>‹ Home</button></div><h1>' + esc(title) + "</h1>" +
-                        (sub ? '<div class="sub">' + esc(sub) + "</div>" : "") + (meta ? '<div class="meta">' + esc(meta) + "</div>" : "");
+                // ── Device selection: ?device= wins for the view, a click persists ──
+                function pick() {
+                    try {
+                        var q = new URL(location.href).searchParams.get("device");
+                        if (q && DEVICES[q]) return q;
+                        var s = localStorage.getItem("phone-device");
+                        if (s && DEVICES[s]) return s;
+                    } catch (e) {}
+                    return DEFAULT;
                 }
 
-                function tile(a, key) {
-                    var el = document.createElement(a.href ? "a" : "button");
-                    el.className = "appicon";
-                    if (a.href) { el.href = a.href; if (/^https?:/.test(a.href)) { el.target = "_blank"; el.rel = "noopener"; } }
-                    else el.type = "button";
-                    el.setAttribute("aria-label", a.label);
-                    el.innerHTML = '<span class="tile" style="background:' + a.bg + '">' + esc(a.glyph) + '</span><span class="label">' + esc(a.label) + "</span>";
-                    if (key) el.addEventListener("click", function () { openApp(key, el); });
-                    if (a.action) el.addEventListener("click", a.action);
-                    return el;
+                var host = document.getElementById("device");
+                var switcher = document.getElementById("switcher");
+                var data = null, current = null, unmount = null, token = 0;
+
+                function track(name) {
+                    try {
+                        navigator.sendBeacon("https://ask.anthonyrizk.me/event",
+                            new Blob([JSON.stringify({ name: name })], { type: "text/plain" }));
+                    } catch (e) {}
                 }
 
-                // ── Navigation ──────────────────────────────────────────
-                var layer = "lock";
-                function show(next) {
-                    layer = next;
-                    home.hidden = !(next === "home" || next === "spot");
-                    home.classList.toggle("behind", next === "spot");
-                    spot.hidden = next !== "spot";
-                    app.hidden = next !== "app";
-                    var light = next === "app";
-                    status.classList.toggle("dark", light);
-                    homebar.classList.toggle("dark", light);
-                    homebar.hidden = next === "lock";
-                }
-                function unlock() {
-                    if (layer !== "lock") return;
-                    show("home");
-                    home.hidden = false;
-                    if (reduced) { lock.hidden = true; return; }
-                    lock.classList.add("gone");
-                    setTimeout(function () { lock.hidden = true; }, 460);
-                }
-                function openApp(key, fromEl) {
-                    var a = apps[key]; if (!a) return;
-                    app.innerHTML = a.render();
-                    app.scrollTop = 0;
-                    if (fromEl && !reduced) {
-                        var s = screen.getBoundingClientRect(), r = fromEl.querySelector(".tile").getBoundingClientRect();
-                        app.style.transformOrigin = (r.left + r.width / 2 - s.left) + "px " + (r.top + r.height / 2 - s.top) + "px";
-                        app.classList.add("opening");
-                        show("app");
-                        requestAnimationFrame(function () { requestAnimationFrame(function () { app.classList.remove("opening"); }); });
-                    } else show("app");
-                }
-                function goHome() {
-                    if (layer === "app" && !reduced) {
-                        app.classList.add("opening");
-                        setTimeout(function () { app.classList.remove("opening"); show("home"); }, 300);
-                    } else if (layer !== "lock") show("home");
-                }
-                function openSpotlight() {
-                    show("spot");
-                    $("spot-input").value = "";
-                    setTimeout(function () { $("spot-input").focus(); }, 50);
-                }
-                function ask(q) {
-                    q = (q || "").trim(); if (!q) return;
-                    location.href = "/?ask=" + encodeURIComponent(q.slice(0, 500)) + "#ask";
+                var ctx = {
+                    get data() { return data; },
+                    devices: DEVICES,
+                    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+                    esc: function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); },
+                    slug: slug,
+                    // Hand a question to the résumé's Ask box.
+                    ask: function (q) {
+                        q = (q || "").trim(); if (!q) return;
+                        location.href = "/?ask=" + encodeURIComponent(q.slice(0, 500)) + "#ask";
+                    },
+                    setDevice: function (name, persist) { setDevice(name, persist !== false); },
+                    current: function () { return current; },
+                };
+
+                function setDevice(name, persist) {
+                    if (!DEVICES[name]) return;
+                    if (persist) {
+                        try {
+                            localStorage.setItem("phone-device", name);
+                            var url = new URL(location.href);
+                            if (name === DEFAULT) url.searchParams.delete("device"); else url.searchParams.set("device", name);
+                            history.replaceState(null, "", url);
+                        } catch (e) {}
+                    }
+                    if (name === current) return;
+                    current = name;
+                    Array.prototype.forEach.call(switcher.querySelectorAll("button"), function (b) {
+                        b.setAttribute("aria-pressed", b.dataset.device === name ? "true" : "false");
+                    });
+                    var mine = ++token;
+                    if (unmount) { try { unmount(); } catch (e) { console.warn(e); } unmount = null; }
+                    host.innerHTML = "";
+                    import(DEVICES[name].module + "?v=" + VERSION)
+                        .then(function (mod) {
+                            if (mine !== token) return; // switched again while loading
+                            unmount = mod.mount(host, ctx) || null;
+                        })
+                        .catch(function (e) {
+                            console.error(e);
+                            host.innerHTML = '<div class="error">That phone didn’t load.<br><br><a href="/">Open the résumé →</a></div>';
+                        });
+                    track("phone_" + name);
                 }
 
-                lock.addEventListener("click", unlock);
-                homebar.addEventListener("click", goHome);
-                app.addEventListener("click", function (e) { if (e.target.closest("[data-home]")) goHome(); });
-                $("open-search").addEventListener("click", openSpotlight);
-                $("spot-cancel").addEventListener("click", function () { show("home"); });
-                $("spot-form").addEventListener("submit", function (e) { e.preventDefault(); ask($("spot-input").value); });
-                spot.addEventListener("click", function (e) { if (e.target === spot) show("home"); });
-                document.addEventListener("keydown", function (e) {
-                    if (e.key === "Escape") { if (layer === "spot") show("home"); else if (layer === "app") goHome(); }
-                    if ((e.key === "Enter" || e.key === " ") && layer === "lock") unlock();
+                Object.keys(DEVICES).forEach(function (k) {
+                    var b = document.createElement("button");
+                    b.type = "button"; b.dataset.device = k; b.textContent = DEVICES[k].label;
+                    b.addEventListener("click", function () { setDevice(k, true); });
+                    switcher.appendChild(b);
                 });
 
-                // Swipe up: unlock from the lock screen, go home from an app.
-                // Pull down on the home screen: Spotlight.
-                var y0 = null, x0 = null;
-                screen.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }, { passive: true });
-                screen.addEventListener("touchend", function (e) {
-                    if (y0 === null) return;
-                    var dy = e.changedTouches[0].clientY - y0, dx = e.changedTouches[0].clientX - x0;
-                    var fromBottom = y0 > screen.getBoundingClientRect().bottom - 60;
-                    if (Math.abs(dy) > 50 && Math.abs(dy) > Math.abs(dx)) {
-                        if (dy < 0 && layer === "lock") unlock();
-                        else if (dy < 0 && layer === "app" && fromBottom) goHome();
-                        else if (dy > 0 && layer === "home") openSpotlight();
-                    }
-                    y0 = null;
-                }, { passive: true });
-
-                // ── Load the résumé and assemble the phone ──────────────
                 fetch("/", { credentials: "same-origin" })
                     .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
                     .then(function (html) {
-                        fromResume(new DOMParser().parseFromString(html, "text/html"));
-                        var grid = $("grid");
-                        Object.keys(apps).forEach(function (k) { grid.appendChild(tile(apps[k], k)); });
-                        var dock = $("dock");
-                        dockApps.forEach(function (a) { dock.appendChild(tile(a)); });
-                        var list = $("spot-list");
-                        suggestions.forEach(function (q) {
-                            var b = document.createElement("button"); b.type = "button"; b.textContent = q;
-                            b.addEventListener("click", function () { ask(q); });
-                            list.appendChild(b);
-                        });
-                        if (!suggestions.length) list.hidden = true;
+                        data = readResume(new DOMParser().parseFromString(html, "text/html"));
+                        setDevice(pick(), false);
                     })
                     .catch(function (e) {
                         console.error(e);
-                        screen.insertAdjacentHTML("beforeend", '<div class="error">Couldn’t load the résumé.<br><br><a href="/">Open it directly →</a></div>');
+                        host.innerHTML = '<div class="error">Couldn’t load the résumé.<br><br><a href="/">Open it directly →</a></div>';
                     });
-
-                show("lock");
             })();
         </script>
     </body>
