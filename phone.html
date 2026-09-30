@@ -89,10 +89,12 @@
             (function () {
                 // Bump when anything in phone/ changes: dynamic imports aren't
                 // reliably refetched by a hard refresh.
-                var VERSION = "2026-10-01b";
+                var VERSION = "2026-10-01d";
+                // In order of era — the switcher lists them this way.
                 var DEVICES = {
-                    iphone: { label: "iPhone", module: "/phone/iphone.js" },
                     blackberry: { label: "BlackBerry", module: "/phone/blackberry.js" },
+                    iphone4: { label: "iPhone 4", module: "/phone/iphone4.js" },
+                    iphone: { label: "iPhone", module: "/phone/iphone.js" },
                 };
                 var DEFAULT = "iphone";
 
