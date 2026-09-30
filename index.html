@@ -36,10 +36,24 @@
             // adopting it. Only pressing a pill persists. A stored novelty
             // theme is written back into the address bar with replaceState (no
             // reload, no history entry), so the URL is always shareable.
-            // Keep THEMES/NOVELTY in sync with the pill row further down.
+            //
+            // THE THEME REGISTRY lives here and nowhere else — the picker, the
+            // module loader and the font loader all read window.__themes.
+            // Adding a theme: an entry here, a pill in .theme-picker, its CSS,
+            // and theme_<name> in the event allowlist in ../ask-api.
             (function () {
-                var THEMES = ["classic", "light", "dark", "terminal"];
-                var NOVELTY = ["terminal"];
+                // Bump whenever anything in themes/ changes — browsers cache
+                // those files and a hard refresh doesn't reliably refetch a
+                // dynamic import(), so a new URL is the only guarantee.
+                var VERSION = "2026-10-01a";
+                var NOVELTY = {
+                    terminal: { module: "/themes/terminal.js" },
+                    blueprint: {
+                        fonts: "https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap",
+                    },
+                };
+                window.__themes = { version: VERSION, novelty: NOVELTY };
+                var THEMES = ["classic", "light", "dark"].concat(Object.keys(NOVELTY));
                 var theme = null;
                 try {
                     var url = new URL(location.href);
@@ -56,7 +70,7 @@
                         var saved = localStorage.getItem("theme");
                         if (THEMES.indexOf(saved) !== -1) {
                             theme = saved;
-                            if (NOVELTY.indexOf(saved) !== -1) {
+                            if (Object.prototype.hasOwnProperty.call(NOVELTY, saved)) {
                                 url.searchParams.set("theme", saved);
                                 history.replaceState(null, "", url);
                             }
@@ -66,6 +80,18 @@
                 if (theme && theme !== "classic") {
                     document.documentElement.setAttribute("data-theme", theme);
                 }
+                // A theme's own fonts load only when it's active, and here in
+                // the head so they're requested before first paint.
+                window.__themes.loadFonts = function (name) {
+                    var href = NOVELTY[name] && NOVELTY[name].fonts;
+                    if (!href || document.querySelector('link[data-theme-fonts="' + name + '"]')) return;
+                    var link = document.createElement("link");
+                    link.rel = "stylesheet";
+                    link.href = href;
+                    link.setAttribute("data-theme-fonts", name);
+                    document.head.appendChild(link);
+                };
+                window.__themes.loadFonts(theme);
             })();
         </script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1233,7 +1259,7 @@
             @media print { .theme-toggle { display: none; } }
             /* Light/dark only means something for Classic. A novelty theme
                owns its palette, so the toggle steps aside. */
-            :root[data-theme="terminal"] .theme-toggle { display: none; }
+            :root[data-theme]:not([data-theme="light"]):not([data-theme="dark"]) .theme-toggle { display: none; }
 
             /* --- theme picker ---------------------------------------- */
             .theme-picker {
@@ -1492,6 +1518,107 @@
                     border-top: 1px dashed var(--border-mid);
                 }
             }
+
+            /* ================================================================
+               THEME: blueprint
+               An engineering drawing: white ink on blueprint blue, a drafting
+               grid, hand-lettered headings, and a title block on the nameplate.
+               Same DOM, same words; screen only, so print stays Classic.
+               ================================================================ */
+            @media screen {
+                :root[data-theme="blueprint"] {
+                    color-scheme: dark;
+                    --bg: #1b4b85;
+                    --bg-surface: #1f5391;
+                    --bg-card: #22599b;
+                    --bg-elevated: #2661a6;
+                    --text: #f4f8ff;
+                    --text-mid: #d6e5f8;
+                    --text-muted: #a3bfe3;
+                    --text-dim: #7c9dcb;
+                    --blue: #ffffff;       /* the ink */
+                    --purple: #d7e8ff;
+                    --teal: #c4ecff;
+                    --orange: #ffe48a;     /* pencilled annotations */
+                    --shadow: transparent;
+                    --sheen: transparent;
+                }
+                [data-theme="blueprint"] body {
+                    /* Drafting grid: fine lines every 20px, heavier every 100px. */
+                    background-color: var(--bg);
+                    background-image:
+                        linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px),
+                        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+                    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+                }
+                [data-theme="blueprint"] body * {
+                    border-radius: 0 !important;
+                    box-shadow: none !important;
+                }
+                [data-theme="blueprint"] :is(h1, h2, .eyebrow, .company, .theme-picker, .headline-tags span, .btn) {
+                    font-family: "Architects Daughter", "Comic Sans MS", cursive !important;
+                }
+                [data-theme="blueprint"] ::selection { background: #fff; color: var(--bg); }
+
+                [data-theme="blueprint"] header::before { background: rgba(255,255,255,.7); height: 1px; }
+
+                /* The nameplate becomes the drawing's title block. */
+                [data-theme="blueprint"] .nameplate {
+                    background: rgba(27,75,133,.85);
+                    border: 2px solid rgba(255,255,255,.9);
+                    padding-bottom: 54px;
+                }
+                [data-theme="blueprint"] .nameplate::after {
+                    content: "DRAWN  A. RIZK   ·   SCALE  1:1   ·   SHEET  1 OF 1";
+                    position: absolute; left: -2px; right: -2px; bottom: -2px;
+                    padding: 7px 14px; text-align: right;
+                    border: 2px solid rgba(255,255,255,.9);
+                    font-family: "JetBrains Mono", monospace; font-size: 0.62rem;
+                    letter-spacing: 1.5px; color: var(--text-muted);
+                }
+                [data-theme="blueprint"] .nameplate .eyebrow { letter-spacing: 2.5px; font-size: 0.8rem; color: var(--orange); }
+                [data-theme="blueprint"] .nameplate h1 {
+                    background: none;
+                    -webkit-text-fill-color: currentColor;
+                    color: #fff;
+                    font-weight: 400;
+                    letter-spacing: 1px;
+                }
+                [data-theme="blueprint"] .headline-tags span {
+                    background: none;
+                    border: 1px solid rgba(255,255,255,.6);
+                    color: #fff;
+                    letter-spacing: 1px;
+                }
+
+                /* Sections: hand-lettered headings over a dashed rule. */
+                [data-theme="blueprint"] section h2 {
+                    font-size: 1rem; letter-spacing: 2px; color: #fff;
+                }
+                [data-theme="blueprint"] section h2::before { background: #fff; width: 10px; height: 10px; }
+                [data-theme="blueprint"] section h2::after {
+                    background: none; height: 0; border-top: 1px dashed rgba(255,255,255,.55);
+                }
+                [data-theme="blueprint"] section + section { border-top: 1px dashed rgba(255,255,255,.3); }
+                [data-theme="blueprint"] .exp-item { border-bottom: 1px dashed rgba(255,255,255,.25); }
+                /* Timeline dots become drafting crosshairs. */
+                [data-theme="blueprint"] .exp-item::before {
+                    width: 11px; height: 11px;
+                    background:
+                        linear-gradient(#fff, #fff) center / 100% 1px no-repeat,
+                        linear-gradient(#fff, #fff) center / 1px 100% no-repeat;
+                    border: 1px solid #fff;
+                    border-radius: 50% !important;
+                }
+                [data-theme="blueprint"] .exp-item .company { font-size: 1.15rem; letter-spacing: 0.5px; }
+                [data-theme="blueprint"] .skill-tag {
+                    background: none; border: 1px solid rgba(255,255,255,.45); color: var(--text);
+                }
+                [data-theme="blueprint"] .btn { border-color: rgba(255,255,255,.7); color: #fff; }
+                [data-theme="blueprint"] footer::before { background: rgba(255,255,255,.5); }
+            }
         </style>
     </head>
     <body>
@@ -1510,6 +1637,7 @@
                 <span class="theme-picker-label">Theme</span>
                 <button type="button" data-pick="classic" aria-pressed="true">Classic</button>
                 <button type="button" data-pick="terminal" aria-pressed="false">Terminal</button>
+                <button type="button" data-pick="blueprint" aria-pressed="false">Blueprint</button>
             </nav>
             <!-- Hero -->
             <header>
@@ -2417,7 +2545,8 @@
             // the OS); a novelty theme is stored and reflected into the URL.
             (function () {
                 var root = document.documentElement;
-                var NOVELTY = ["terminal"];
+                var registry = window.__themes;
+                var NOVELTY = Object.keys(registry.novelty);
                 var pills = Array.prototype.slice.call(
                     document.querySelectorAll(".theme-picker [data-pick]"),
                 );
@@ -2449,6 +2578,7 @@
                         history.replaceState(null, "", url);
                     } catch (e) {}
                     sync();
+                    registry.loadFonts(pick);
                     applyModule("pick");
                     document.dispatchEvent(new CustomEvent("theme-picked", { detail: pick }));
                 }
@@ -2465,13 +2595,12 @@
                 // Modules own their own CSS (injected, removed on unmount) and
                 // must keep the page's DOM and words intact — they decorate the
                 // résumé, never replace it.
-                // Bump THEME_VERSION whenever anything in themes/ changes.
-                // GitHub Pages lets browsers cache these files for ten minutes,
-                // and a dynamic import() isn't reliably refetched by a hard
-                // refresh — so without a new URL, visitors can run old code
-                // against a new page.
-                var THEME_VERSION = "2026-09-30h";
-                var MODULES = { terminal: "/themes/terminal.js?v=" + THEME_VERSION };
+                // Versioned module URLs, built from the registry in the head.
+                var MODULES = {};
+                NOVELTY.forEach(function (name) {
+                    var m = registry.novelty[name].module;
+                    if (m) MODULES[name] = m + "?v=" + registry.version;
+                });
                 var unmountCurrent = null;
                 var loadToken = 0;
 
