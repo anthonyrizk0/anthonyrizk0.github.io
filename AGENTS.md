@@ -95,6 +95,20 @@ when the page loaded in Terminal but fell to 1–10fps after picking Terminal fr
 Classic, and nothing about the canvas fixed it. The same look in CSS holds 60fps
 in every case. Keep WebGL for effects that genuinely need per-pixel work.
 
+## /phone
+
+`phone.html` is the résumé as a phone home screen, and it has **no content of
+its own**: it fetches `/` and builds every app from the résumé's markup. The
+contract is these class names — `.exp-item`, `.company` (+ `.acq`), `.period`,
+`.role`, `.desc li`, `.tech`, `.skill-tag`, `.pub-item`, `.edu-item`,
+`.links a`, `.ask-chip`. Renaming any of them breaks the phone silently, so
+check `/phone` after changing résumé structure.
+
+It sits in the theme row as "Phone ↗" because that's what it is to a visitor,
+but structurally it's a separate page. Spotlight hands questions to the résumé
+via `/?ask=…#ask` rather than running its own Ask client — one Ask client, not
+two. It's `noindex` and out of the sitemap while it's a first cut.
+
 ## Funnel events
 
 The Ask box posts a fixed vocabulary of event names to `/event` — no free text,

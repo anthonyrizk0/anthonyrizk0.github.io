@@ -1298,6 +1298,15 @@
                 color: var(--blue);
                 border-color: var(--border-accent);
             }
+            .theme-picker .theme-link {
+                padding: 3px 12px;
+                border-radius: 999px;
+                border: 1px dashed var(--border-mid);
+                color: var(--text-muted);
+                text-decoration: none;
+                transition: color 0.2s, border-color 0.2s;
+            }
+            .theme-picker .theme-link:hover { color: var(--blue); border-color: var(--border-accent); }
             .theme-picker button[aria-pressed="true"] {
                 color: var(--blue);
                 background: var(--blue-dim);
@@ -1638,6 +1647,9 @@
                 <button type="button" data-pick="classic" aria-pressed="true">Classic</button>
                 <button type="button" data-pick="terminal" aria-pressed="false">Terminal</button>
                 <button type="button" data-pick="blueprint" aria-pressed="false">Blueprint</button>
+                <!-- Not a theme structurally — its own page, built from this
+                     one — but it sits with them because to a visitor it is one. -->
+                <a class="theme-link" href="/phone">Phone ↗</a>
             </nav>
             <!-- Hero -->
             <header>
@@ -2505,6 +2517,20 @@
                     e.preventDefault();
                     ask(input.value.trim());
                 });
+
+                // A question handed over from elsewhere on the site — /phone's
+                // Spotlight sends /?ask=…#ask. Ask it, then drop the parameter
+                // so a reload doesn't ask again.
+                try {
+                    const url = new URL(location.href);
+                    const handed = (url.searchParams.get("ask") || "").trim();
+                    if (handed) {
+                        url.searchParams.delete("ask");
+                        history.replaceState(null, "", url);
+                        input.value = handed.slice(0, 500);
+                        ask(input.value);
+                    }
+                } catch (e) {}
 
                 chips.addEventListener("click", function (e) {
                     const chip = e.target.closest(".ask-chip");
