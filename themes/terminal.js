@@ -28,7 +28,21 @@ const CSS = `
   flex: 1; min-width: 0; background: none; border: none; outline: none;
   font: inherit; color: var(--text); caret-color: var(--blue); padding: 2px 0;
 }
-.term-in::placeholder { color: var(--text-dim); }
+.term-field { position: relative; flex: 1; min-width: 0; display: flex; }
+/* The ghost sits over the empty input: example commands typing themselves out,
+   and the page's only blinking cursor. Gone the moment the input is focused or
+   holds text. */
+.term-ghost {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  color: var(--text-muted); pointer-events: none; white-space: pre; overflow: hidden;
+}
+.term-ghost .caret {
+  display: inline-block; width: 0.62em; height: 1.1em; margin-left: 1px;
+  background: var(--blue); animation: term-caret 1.05s steps(1) infinite;
+}
+.term-field.is-live .term-ghost { display: none; }
+@keyframes term-caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .term-ghost .caret { animation: none; } }
 .term-min {
   background: none; border: 1px solid var(--border-mid); color: var(--text-muted);
   font: inherit; font-size: 0.7rem; padding: 0 7px; cursor: pointer;
@@ -99,9 +113,11 @@ export function mount(ctx) {
       <div class="term-out" aria-live="polite"></div>
       <div class="term-line">
         <span class="term-ps1"><span class="host">anthony@anthonyrizk.me</span>:~$</span>
-        <input class="term-in" type="text" spellcheck="false" autocomplete="off"
-               autocapitalize="off" aria-label="Terminal — type help"
-               placeholder="type help" />
+        <span class="term-field">
+          <input class="term-in" type="text" spellcheck="false" autocomplete="off"
+                 autocapitalize="off" aria-label="Terminal — type help" />
+          <span class="term-ghost" aria-hidden="true"><span class="txt"></span><span class="caret"></span></span>
+        </span>
         <button class="term-min" type="button" aria-label="Minimise terminal">_</button>
       </div>
     </div>`;
@@ -111,6 +127,8 @@ export function mount(ctx) {
   const out = bar.querySelector(".term-out");
   const input = bar.querySelector(".term-in");
   const minBtn = bar.querySelector(".term-min");
+  const field = bar.querySelector(".term-field");
+  const ghostTxt = bar.querySelector(".term-ghost .txt");
 
   const print = (html, cls) => {
     const div = document.createElement("div");
@@ -209,8 +227,49 @@ export function mount(ctx) {
   const history = [];
   let hIndex = 0;
 
+  // --- the ghost ----------------------------------------------------------------
+  // Types example commands into the idle prompt, one character at a time, then
+  // erases them. It's what draws the eye down here and it doubles as a hint.
+  // Stops for good after the visitor's first real command — by then its job is
+  // done — and pauses while the tab is hidden. Reduced motion gets a still hint.
+  const EXAMPLES = ["help", "cat greg", "ls roles", "ask what did he build at Tableau", "cd skills"];
+  let ghostTimer = null;
+  let ghostRetired = false;
+
+  const setLive = () => field.classList.toggle("is-live", document.activeElement === input || input.value !== "");
+  const stopGhost = () => { clearTimeout(ghostTimer); ghostTimer = null; };
+  cleanups.push(stopGhost);
+
+  const startGhost = () => {
+    stopGhost();
+    if (ghostRetired) { ghostTxt.textContent = ""; return; }
+    if (ctx.reducedMotion) { ghostTxt.textContent = "type help"; return; }
+    let ex = 0, i = 0, erasing = false;
+    const tick = () => {
+      if (document.hidden) { ghostTimer = setTimeout(tick, 1000); return; }
+      const word = EXAMPLES[ex];
+      if (!erasing) {
+        i++;
+        ghostTxt.textContent = word.slice(0, i);
+        if (i >= word.length) { erasing = true; ghostTimer = setTimeout(tick, 1900); return; }
+        ghostTimer = setTimeout(tick, 70 + Math.random() * 90); // uneven, like a person
+      } else {
+        i--;
+        ghostTxt.textContent = word.slice(0, i);
+        if (i <= 0) { erasing = false; ex = (ex + 1) % EXAMPLES.length; ghostTimer = setTimeout(tick, 650); return; }
+        ghostTimer = setTimeout(tick, 32);
+      }
+    };
+    ghostTimer = setTimeout(tick, 1200);
+  };
+
+  on(input, "focus", () => { setLive(); stopGhost(); });
+  on(input, "blur", () => { setLive(); if (!input.value) startGhost(); });
+  on(input, "input", setLive);
+
   const run = (raw) => {
     const line = raw.trim();
+    if (line && !ghostRetired) { ghostRetired = true; stopGhost(); ghostTxt.textContent = ""; }
     print(`$ ${esc(line)}`, "cmd");
     if (!line) return;
     history.push(line);
@@ -287,9 +346,12 @@ export function mount(ctx) {
   };
   on(minBtn, "click", toggleMin);
   on(out, "click", (e) => { if (e.target === out) input.focus(); });
+  on(field, "click", () => input.focus());
   try { if (sessionStorage.getItem("term-min") === "1") toggleMin(); } catch (e) {}
 
   print("anthonyrizk.me — type <span class='hi'>help</span>, or <span class='hi'>exit</span> to leave");
+  setLive();
+  startGhost();
 
   return function unmount() {
     cleanups.forEach((fn) => fn());
