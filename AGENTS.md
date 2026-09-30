@@ -37,8 +37,11 @@ paths (`/pv/foo.jpg`) are the safer habit.
 ## Link previews
 
 The `og:`/`twitter:` tags in `index.html` drive how the link looks when shared.
-The image is `og/card.png`, rendered from `og/card.html` with a headless browser
-at 1200×630 — edit the HTML and re-render; don't hand-edit the PNG. Platforms
+The image is `og/card-v2.png`, rendered from `og/card.html` with a headless
+browser at 1200×630 — edit the HTML and re-render; don't hand-edit the PNG.
+LinkedIn often shows it as a **160×84 thumbnail**, so the card is deliberately
+just two big elements; anything smaller turns to mush. Give a changed card a new
+filename, because platforms cache images by URL. Platforms
 cache previews for days, so after any change re-scrape with LinkedIn's Post
 Inspector and Facebook's Sharing Debugger. If the tagline on the page changes,
 the card and the description tag need changing too.
