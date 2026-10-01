@@ -155,7 +155,7 @@ export function mount(host, ctx) {
   apps.push({ id: "bbm", label: "BBM", glyph: "✉", bg: "linear-gradient(160deg,#4d4d57,#15151a)", splat: true });
   for (const r of data.roles) {
     apps.push({
-      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name),
+      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name), icon: r.icon,
       rows: () => [
         { text: r.name, cls: "big" },
         { text: r.title },
@@ -235,7 +235,8 @@ export function mount(host, ctx) {
   const icons = apps.map((a, i) => {
     const b = document.createElement("button");
     b.type = "button"; b.className = "bb-icon"; b.setAttribute("role", "option"); b.setAttribute("aria-label", a.label);
-    b.innerHTML = `<span class="g" style="background:${a.bg}">${esc(a.glyph)}</span>${a.splat ? '<span class="bb-splat" aria-label="new">1</span>' : ""}`;
+    const f = ctx.face(a);
+    b.innerHTML = `<span class="g" style="background:${f.bg}">${f.html}</span>${a.splat ? '<span class="bb-splat" aria-label="new">1</span>' : ""}`;
     on(b, "click", () => { focusIcon(i); open(i); });
     grid.appendChild(b);
     return b;

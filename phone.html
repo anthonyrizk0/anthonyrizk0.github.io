@@ -89,7 +89,7 @@
             (function () {
                 // Bump when anything in phone/ changes: dynamic imports aren't
                 // reliably refetched by a hard refresh.
-                var VERSION = "2026-10-01d";
+                var VERSION = "2026-10-01f";
                 // In order of era — the switcher lists them this way.
                 var DEVICES = {
                     blackberry: { label: "BlackBerry", module: "/phone/blackberry.js" },
@@ -97,6 +97,25 @@
                     iphone: { label: "iPhone", module: "/phone/iphone.js" },
                 };
                 var DEFAULT = "iphone";
+
+                // Real icons for the companies, keyed by the role's slug. A
+                // company missing here gets a letter tile. "bg" fills behind
+                // icons with transparency; full-tile icons need none. Sources:
+                // each company's own apple-touch-icon or favicon, Cape's 2017
+                // icon from the Wayback Machine, and Simple Icons (CC0) on the
+                // brand colour where the site's own was too small to stay
+                // sharp. Zeebu and Rove have none that survived.
+                var ICONS = {
+                    classdojo: { src: "/phone/icons/classdojo.png", bg: "#fff", pad: true },
+                    greg: { src: "/phone/icons/greg.png" },
+                    facebook: { src: "/phone/icons/facebook.svg", bg: "#0866ff", pad: true },
+                    google: { src: "/phone/icons/google.png", bg: "#fff", pad: true },
+                    cape: { src: "/phone/icons/cape.png" },
+                    tableau: { src: "/phone/icons/tableau.svg", bg: "#e97627", pad: true },
+                    vmware: { src: "/phone/icons/vmware.png" },
+                    bitheads: { src: "/phone/icons/bitheads.png", bg: "#fff", pad: true },
+                    truecontext: { src: "/phone/icons/truecontext.png" },
+                };
 
                 function text(el) { return el ? el.textContent.replace(/\s+/g, " ").trim() : ""; }
                 function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, ""); }
@@ -114,6 +133,7 @@
                         seen[key] = true;
                         data.roles.push({
                             key: key, name: name, label: label,
+                            icon: ICONS[slug(name)] || null,
                             acq: text(item.querySelector(".company .acq")),
                             period: period,
                             title: text(item.querySelector(".role")),
@@ -168,6 +188,15 @@
                     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
                     esc: function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); },
                     slug: slug,
+                    // A tile's face: the company's icon if we have one, else
+                    // its letter on the device's own gradient.
+                    face: function (a) {
+                        if (a.icon) return {
+                            bg: a.icon.bg || "transparent",
+                            html: '<img src="' + a.icon.src + "?v=" + VERSION + '" alt="" draggable="false" style="display:block;width:100%;height:100%;object-fit:contain;' + (a.icon.pad ? "padding:14%;" : "") + '">',
+                        };
+                        return { bg: a.bg, html: ctx.esc(a.glyph) };
+                    },
                     // Hand a question to the résumé's Ask box.
                     ask: function (q) {
                         q = (q || "").trim(); if (!q) return;

@@ -116,6 +116,13 @@ Nothing answers questions inside the phone yet: `ctx.ask()` hands them to the
 résumé via `/?ask=…#ask`. Answering in place means moving the Ask client out of
 `index.html` into a shared script first — not copying it.
 
+Company icons live in `phone/icons/`, mapped by role slug in `ICONS` in
+`phone.html`; a company not in the map gets a letter tile. They're employers'
+logos used to say "worked here" — nominative use, common on résumés — not the
+device makers' interface artwork, which stays off-limits. Sources are noted
+beside the map. Zeebu and Rove have no surviving logo; if Anthony supplies
+originals, drop them in and add two lines to the map.
+
 "Phone ↗" sits in the theme row because to a visitor it is one. `noindex` and
 out of the sitemap while it's a first cut. Homage, not copies: no logos.
 

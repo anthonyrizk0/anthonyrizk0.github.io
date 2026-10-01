@@ -199,7 +199,7 @@ export function mount(host, ctx) {
   const apps = [];
   for (const r of data.roles) {
     apps.push({
-      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name),
+      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name), icon: r.icon,
       open: () => table(r.name, [
         { rows: [{ text: r.name, cls: "big" }, { text: r.title }, { text: [r.period, r.acq].filter(Boolean).join(" · "), cls: "v" }] },
         ...(r.bullets.length ? [{ title: "What I did", rows: r.bullets.map((b) => ({ text: b })) }] : []),
@@ -281,7 +281,8 @@ export function mount(host, ctx) {
     el.className = "i4-app";
     if (a.href) { el.href = a.href; if (/^https?:/.test(a.href)) { el.target = "_blank"; el.rel = "noopener"; } } else el.type = "button";
     el.setAttribute("aria-label", a.label);
-    el.innerHTML = `<span class="gw"><span class="g" style="background:${a.bg}">${esc(a.glyph)}</span>${a.badge ? '<span class="i4-badge">1</span>' : ""}</span><span class="l">${esc(a.label)}</span>`;
+    const f = ctx.face(a);
+    el.innerHTML = `<span class="gw"><span class="g" style="background:${f.bg}">${f.html}</span>${a.badge ? '<span class="i4-badge">1</span>' : ""}</span><span class="l">${esc(a.label)}</span>`;
     if (a.open) on(el, "click", () => openApp(a, el));
     return el;
   };

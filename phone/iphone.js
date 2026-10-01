@@ -62,7 +62,7 @@ const CSS = `
   background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); font-size: 13px; color: rgba(255,255,255,.85); cursor: pointer; border: none; font-family: inherit; }
 .ip-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 10px; align-content: start; }
 .ip-app { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; border: none; background: none; color: inherit; font: inherit; text-decoration: none; }
-.ip-app .tile { width: 60px; height: 60px; border-radius: 15px; display: grid; place-items: center; font-weight: 700; font-size: 26px; color: #fff;
+.ip-app .tile { width: 60px; height: 60px; border-radius: 15px; overflow: hidden; display: grid; place-items: center; font-weight: 700; font-size: 26px; color: #fff;
   box-shadow: 0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3); transition: transform .15s; }
 .ip-app:active .tile { transform: scale(.9); }
 .ip-app .label { font-weight: 500; font-size: 11.5px; max-width: 74px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
@@ -140,7 +140,7 @@ export function mount(host, ctx) {
   const apps = [];
   for (const r of data.roles) {
     apps.push({
-      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name),
+      label: r.label, glyph: r.name.charAt(0), bg: tint(ctx.slug(r.name), r.name), icon: r.icon,
       render: () => head(r.name, r.title, [r.period, r.acq].filter(Boolean).join(" · ")) +
         (r.bullets.length ? `<div class="ip-group">${r.bullets.map((b) => `<div class="ip-row">${esc(b)}</div>`).join("")}</div>` : "") +
         (r.tech.length ? `<div class="ip-group-title">Built with</div><div class="ip-group">${chips(r.tech)}</div>` : ""),
@@ -203,7 +203,8 @@ export function mount(host, ctx) {
     el.className = "ip-app";
     if (a.href) { el.href = a.href; if (/^https?:/.test(a.href)) { el.target = "_blank"; el.rel = "noopener"; } } else el.type = "button";
     el.setAttribute("aria-label", a.label);
-    el.innerHTML = `<span class="tile" style="background:${a.bg}">${esc(a.glyph)}</span><span class="label">${esc(a.label)}</span>`;
+    const f = ctx.face(a);
+    el.innerHTML = `<span class="tile" style="background:${f.bg}">${f.html}</span><span class="label">${esc(a.label)}</span>`;
     if (onOpen) on(el, "click", () => onOpen(el));
     return el;
   };
