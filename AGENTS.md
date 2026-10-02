@@ -95,6 +95,28 @@ when the page loaded in Terminal but fell to 1–10fps after picking Terminal fr
 Classic, and nothing about the canvas fixed it. The same look in CSS holds 60fps
 in every case. Keep WebGL for effects that genuinely need per-pixel work.
 
+## The Ask client — `ask-client.js`
+
+One shared ES module, used by the résumé and every phone: loading Turnstile,
+trading a solved challenge for a session, asking, re-challenging once on a 403
+(a stale session after a server restart), and streaming. It owns **no UI** —
+pages decide what waiting looks like, where the checkbox appears, and what to
+say; the client reports failures as `AskError.kind` (`blocked`,
+`verify-timeout`, `verify-failed`, `no_output`, `unreachable`), with default
+wording in `MESSAGES`.
+
+It **waits for Turnstile to be ready** — script loaded *and* widget rendered
+(the hidden `cf-turnstile-response` input appears) — for up to 15s before
+calling it blocked. The old inline client checked once, so a question asked on
+page load (the `/?ask=` hand-off) failed as "blocked" whenever the script was
+merely still loading.
+
+One client per page: Turnstile calls back through fixed global names
+(`window.askTurnstile*`). Rendering is implicit on purpose — the widget markup
+must exist before `api.js` loads; explicit `render()` hit ordering bugs in
+Safari. It's versioned with the theme registry's `VERSION` on the résumé and
+`phone.html`'s `VERSION` on the phone.
+
 ## /phone
 
 `phone.html` is a shell with swappable **devices**. It has no content of its
@@ -112,9 +134,9 @@ anything in `phone/` changes. `?device=` shows a device for that view; picking
 one persists it. Each device also reports `phone_<name>`, which needs adding to
 the event allowlist in `../ask-api/src/server.ts`.
 
-Nothing answers questions inside the phone yet: `ctx.ask()` hands them to the
-résumé via `/?ask=…#ask`. Answering in place means moving the Ask client out of
-`index.html` into a shared script first — not copying it.
+Phones answer in place through `ctx.answer(q, onText)`, which uses the same
+shared client as the résumé. `ctx.ask()` — hand the question to the résumé via
+`/?ask=…#ask` — remains only as the fallback offered when an answer fails.
 
 Company icons live in `phone/icons/`, mapped by role slug in `ICONS` in
 `phone.html`; a company not in the map gets a letter tile. They're employers'

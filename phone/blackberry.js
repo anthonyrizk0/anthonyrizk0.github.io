@@ -77,6 +77,7 @@ const CSS = `
 .bb-msg .rcpt { display: inline-block; margin-left: 5px; font-size: 9.5px; font-weight: 700; color: #1d5fb8; }
 .bb-msg .opt { display: block; color: #1d5fb8; cursor: pointer; }
 .bb-msg a { color: #1d5fb8; font-weight: 700; }
+.bb-msg p { margin: 0 0 4px; } .bb-msg ul { margin: 0 0 4px 14px; } .bb-msg.them { user-select: text; -webkit-user-select: text; }
 .bb-typing { font-size: 10.5px; color: #777; font-style: italic; }
 .bb-compose { display: flex; align-items: center; gap: 4px; margin: 0 6px 6px; padding: 4px 6px; background: #fff; border: 1px solid #9aa4b3; border-radius: 3px; font-size: 12px; min-height: 24px; color: #111; }
 .bb-compose .ph { color: #999; }
@@ -325,22 +326,29 @@ export function mount(host, ctx) {
     busy = true; compose = ""; renderCompose();
     const mine = say("Me", `${esc(q)}<span class="rcpt">…</span>`, "me");
     const rcpt = mine.querySelector(".rcpt");
+    // Delivered at once; Read when Anthony starts answering — which is when
+    // the first words of the real answer arrive.
     later(() => (rcpt.textContent = "D"), 450);
-    later(() => (rcpt.textContent = "R"), 1500);
-    later(() => {
-      const t = document.createElement("div");
-      t.className = "bb-typing"; t.textContent = "Anthony is typing…";
-      msgs.appendChild(t); msgs.scrollTop = msgs.scrollHeight;
-      later(() => {
-        t.remove();
-        const reply = say("Anthony", `Good one — that answer's better on the big screen. <a href="#" data-open>Read it ›</a>`, "them");
-        reply.querySelector("[data-open]").addEventListener("click", (e) => { e.preventDefault(); ctx.ask(q); });
-        pendingQuestion = q;
-        busy = false;
-      }, 1400);
-    }, 1900);
+    const typing = document.createElement("div");
+    typing.className = "bb-typing"; typing.textContent = "Anthony is typing…";
+    later(() => { if (!reply) { msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight; } }, 900);
+    let reply = null;
+    const write = (html) => {
+      rcpt.textContent = "R";
+      typing.remove();
+      if (!reply) reply = say("Anthony", "", "them");
+      reply.lastElementChild.innerHTML = html;
+      msgs.scrollTop = msgs.scrollHeight;
+    };
+    ctx.answer(q, write)
+      .then(write)
+      .catch((err) => {
+        typing.remove();
+        const r = say("Anthony", `${esc(err.message)} <a href="#">Open in the résumé ›</a>`, "them");
+        r.querySelector("a").addEventListener("click", (e) => { e.preventDefault(); ctx.ask(q); });
+      })
+      .finally(() => { busy = false; });
   }
-  let pendingQuestion = null;
 
   // ── Input: hard keys, trackpad, keyboard ───────────────────────────
   const move = (dx, dy) => {
@@ -351,7 +359,7 @@ export function mount(host, ctx) {
   const select = () => {
     if (view === "home") open(hi);
     else if (view === "page") activate();
-    else if (view === "chat") { if (compose) send(); else if (pendingQuestion) ctx.ask(pendingQuestion); }
+    else if (view === "chat") { if (compose) send(); }
   };
   const back = () => { if (view !== "home") show("home"); };
   const typeKey = (k) => {

@@ -45,7 +45,7 @@
                 // Bump whenever anything in themes/ changes — browsers cache
                 // those files and a hard refresh doesn't reliably refetch a
                 // dynamic import(), so a new URL is the only guarantee.
-                var VERSION = "2026-10-01a";
+                var VERSION = "2026-10-02a";
                 var NOVELTY = {
                     terminal: { module: "/themes/terminal.js" },
                     blueprint: {
@@ -2178,8 +2178,6 @@
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         <script>
             (function () {
-                const ASK_URL = "https://ask.anthonyrizk.me/ask";
-                const SESSION_URL = "https://ask.anthonyrizk.me/session";
 
                 // --- funnel -------------------------------------------------
                 // Six fixed events, fired once each. No identifiers, no content,
@@ -2269,17 +2267,13 @@
                     answer.textContent = text;
                 }
 
-                // --- verification -------------------------------------------
-                // One challenge per visit, not per question. Turnstile runs on
-                // demand (data-execution="execute"), we trade the token for a
-                // short-lived session token, and every later question uses that.
+                // --- asking -------------------------------------------------
+                // Verification, sessions and streaming live in /ask-client.js,
+                // shared with /phone. This page owns only the UI: what waiting
+                // looks like, where the checkbox opens when Cloudflare wants a
+                // click, and what to say when something fails.
                 const wrap = document.getElementById("ask-turnstile-wrap");
-                let session = null;
-                let sessionExpiry = 0;
-                let pending = null; // resolver for the in-flight execute()
 
-                // Called by Turnstile via the data-* attributes, so they must be
-                // reachable on window even though the rest is scoped.
                 // Two waiting states. "Reading the corpus" is a lie while the
                 // visitor is the one being waited on — and that moment is
                 // exactly when someone gives up.
@@ -2300,212 +2294,49 @@
                         '<path d="M12 5v14M6 13l6 6 6-6"/></svg></span>';
                 }
 
-                window.askTurnstileShow = function () {
-                    wrap.classList.add("is-open");
-                    showVerifyPrompt();
-                };
-                window.askTurnstileHide = function () {
-                    wrap.classList.remove("is-open");
-                    showThinking();
-                };
-                window.askTurnstileToken = function (tok) {
-                    wrap.classList.remove("is-open");
-                    showThinking();
-                    if (pending) { pending.resolve(tok); pending = null; }
-                };
-                window.askTurnstileError = function () {
-                    wrap.classList.remove("is-open");
-                    if (pending) { pending.reject(new Error("turnstile")); pending = null; }
-                };
-
-                function solveTurnstile() {
-                    return new Promise(function (resolve, reject) {
-                        // Each attempt owns its timer; settling it must not leave
-                        // a timeout behind that could reject a later challenge.
-                        let timer;
-                        const attempt = {
-                            resolve: function (token) { finish(); resolve(token); },
-                            reject: function (error) { finish(); reject(error); },
-                        };
-                        function finish() {
-                            clearTimeout(timer);
-                            if (pending === attempt) pending = null;
-                        }
-                        pending = attempt;
-                        try {
-                            // Clear any spent token before asking for a new one.
-                            window.turnstile.reset("#ask-turnstile");
-                            // 60s covers reading and clicking the checkbox.
-                            timer = setTimeout(function () {
-                                attempt.reject(new Error("timeout"));
-                            }, 60000);
-                            window.turnstile.execute("#ask-turnstile");
-                        } catch (error) {
-                            attempt.reject(error);
-                        }
-                    });
-                }
-
-                async function ensureSession() {
-                    if (session && Date.now() < sessionExpiry) return session;
-
-                    const tok = await solveTurnstile();
-                    const res = await fetch(SESSION_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ turnstileToken: tok }),
-                    });
-                    if (!res.ok) throw new Error("session " + res.status);
-                    const data = await res.json();
-                    session = data.session;
-                    // Renew a minute early rather than failing a question on the edge.
-                    sessionExpiry = Date.now() + Math.max(0, data.expiresIn - 60000);
-                    return session;
-                }
-
-                // Minimal markdown rendering. HTML is escaped FIRST, so nothing
-                // the model emits — or that a visitor talks it into emitting —
-                // can inject markup. Unclosed markers render literally and
-                // correct themselves as the closing marker streams in.
-                function escapeHtml(s) {
-                    return s.replace(/[&<>"']/g, function (c) {
-                        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-                    });
-                }
-
-                function inlineMd(s) {
-                    return s
-                        .replace(/`([^`]+)`/g, "<code>$1</code>")
-                        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-                        .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
-                }
-
-                function renderMarkdown(src) {
-                    return escapeHtml(src)
-                        .split(/\n{2,}/)
-                        .filter(function (b) { return b.trim(); })
-                        .map(function (block) {
-                            var lines = block.split("\n").filter(function (l) { return l.trim(); });
-                            var bullets = lines.every(function (l) { return /^\s*[-*]\s+/.test(l); });
-                            if (bullets) {
-                                return "<ul>" + lines.map(function (l) {
-                                    return "<li>" + inlineMd(l.replace(/^\s*[-*]\s+/, "")) + "</li>";
-                                }).join("") + "</ul>";
-                            }
-                            return "<p>" + inlineMd(lines.join(" ")) + "</p>";
-                        })
-                        .join("");
-                }
+                // Imported at page load, not at first question, so Turnstile
+                // is loading while the visitor reads. Versioned with the theme
+                // registry: one VERSION for the site's shared scripts.
+                const clientP = import(
+                    "/ask-client.js?v=" + ((window.__themes && window.__themes.version) || "1")
+                ).then(function (mod) {
+                    return {
+                        mod: mod,
+                        client: mod.createAskClient({
+                            host: wrap,
+                            onChallenge: function (visible) {
+                                wrap.classList.toggle("is-open", visible);
+                                if (visible) showVerifyPrompt();
+                                else showThinking();
+                            },
+                        }),
+                    };
+                });
 
                 async function ask(question) {
                     if (!question || busy) return;
-
-                    if (!window.turnstile) {
-                        setAnswer("The verification step didn't load — a content blocker may be stopping it. The r\u00e9sum\u00e9 above covers the same ground.", "is-error");
-                        return;
-                    }
-
                     setBusy(true);
                     showThinking();
-
-                    // Verification is its own failure domain. Folding it into the
-                    // catch below reported every stalled challenge as a backend
-                    // outage, which sent debugging in the wrong direction.
-                    let sess;
+                    let c = null;
                     try {
-                        sess = await ensureSession();
-                    } catch (err) {
-                        console.error("verification failed:", err);
-                        session = null;
-                        sessionExpiry = 0;
-                        if (window.turnstile) window.turnstile.reset();
-                        wrap.classList.remove("is-open");
-                        setBusy(false);
-                        setAnswer(
-                            err && err.message === "timeout"
-                                ? "The verification check didn't complete — that's usually a browser privacy setting or a content blocker. Try again, or reload the page."
-                                : "Couldn't complete the verification step. Try again, or reload the page.",
-                            "is-error",
-                        );
-                        return;
-                    }
-
-                    try {
-                        let res = await fetch(ASK_URL, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ question, session: sess }),
+                        c = await clientP;
+                        await c.client.ask(question, {
+                            onText: function (out) {
+                                answer.className = "ask-answer is-streaming";
+                                answer.innerHTML = c.mod.renderMarkdown(out);
+                            },
                         });
-
-                        // A 403 here means the session is dead, not that the
-                        // visitor is unwelcome. The server's signing secret is
-                        // regenerated on restart, so a session can stop being
-                        // valid well before the client's own expiry — the
-                        // client cannot know that until it tries. Re-challenge
-                        // once rather than reporting an outage.
-                        if (res.status === 403) {
-                            console.warn("session rejected; re-challenging");
-                            session = null;
-                            sessionExpiry = 0;
-                            const fresh = await ensureSession();
-                            res = await fetch(ASK_URL, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ question, session: fresh }),
-                            });
-                        }
-
-                        if (!res.ok || !res.body) throw new Error("HTTP " + res.status);
-
-                        const reader = res.body.getReader();
-                        const decoder = new TextDecoder();
-                        let buf = "";
-                        let out = "";
-
-                        for (;;) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            buf += decoder.decode(value, { stream: true });
-
-                            let idx;
-                            while ((idx = buf.indexOf("\n\n")) !== -1) {
-                                const raw = buf.slice(0, idx);
-                                buf = buf.slice(idx + 2);
-                                const data = raw
-                                    .split("\n")
-                                    .filter((l) => l.startsWith("data:"))
-                                    .map((l) => l.slice(5).trimStart())
-                                    .join("\n");
-                                if (!data) continue;
-
-                                const msg = JSON.parse(data);
-                                if (msg.error === "no_output") {
-                                    // The model reasoned past its budget without
-                                    // answering. Not an outage — say so accurately.
-                                    setAnswer("That one ran long without producing an answer. Try asking it more narrowly.", "is-error");
-                                    return;
-                                }
-                                if (msg.error) throw new Error(msg.error);
-                                if (msg.text) {
-                                    out += msg.text;
-                                    answer.innerHTML = renderMarkdown(out);
-                                }
-                                if (msg.done) answer.className = "ask-answer";
-                            }
-                        }
-                        if (!out) throw new Error("empty response");
+                        answer.className = "ask-answer";
                     } catch (err) {
                         console.error("ask failed:", err);
-                        // Drop a stale session so the next attempt re-challenges
-                        // rather than failing again with the same dead token.
-                        session = null;
-                        sessionExpiry = 0;
+                        const messages = c ? c.mod.MESSAGES : {};
                         // A dead demo reads worse than no demo — fail like a person.
-                        setAnswer("This is temporarily unreachable — my side, not yours. The r\u00e9sum\u00e9 above covers the same ground, and email still works.", "is-error");
+                        setAnswer(
+                            messages[err && err.kind] ||
+                                "This is temporarily unreachable \u2014 my side, not yours. The r\u00e9sum\u00e9 above covers the same ground, and email still works.",
+                            "is-error",
+                        );
                     } finally {
-                        // No reset here — the Turnstile token was spent on the
-                        // session handshake and the session carries the rest.
-                        // solveTurnstile() resets when a new token is needed.
                         wrap.classList.remove("is-open");
                         setBusy(false);
                     }

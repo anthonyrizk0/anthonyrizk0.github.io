@@ -103,6 +103,12 @@ a.ip-row::after, button.ip-row::after { content: "›"; color: #c7c7cc; font-siz
   padding: 12px 14px; cursor: pointer; border-bottom: .5px solid rgba(255,255,255,.12); }
 .ip-spot-list button:last-child { border-bottom: none; }
 .ip-spot-note { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.ip-answer { background: var(--glass-strong); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 14px;
+  padding: 12px 14px; font-size: 14.5px; line-height: 1.45; overflow-y: auto; min-height: 0; flex: 1; user-select: text; -webkit-user-select: text; }
+.ip-answer .q { font-weight: 600; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.ip-answer p { margin: 0 0 8px; } .ip-answer ul { margin: 0 0 8px 18px; } .ip-answer code { font-size: 13px; }
+.ip-answer .wait { color: var(--muted); }
+.ip-answer a { color: #9ec5ff; }
 `;
 
 // No logos: letters on gradients.
@@ -188,7 +194,7 @@ export function mount(host, ctx) {
       <section class="ip-layer ip-spot" hidden aria-label="Search">
         <form class="ip-field"><input type="text" maxlength="500" autocomplete="off" placeholder="Ask about Anthony…" /><button type="button" data-cancel>Cancel</button></form>
         <div class="ip-spot-head">Suggestions</div><div class="ip-spot-list"></div>
-        <div class="ip-spot-note">Answers open in the résumé's Ask box.</div>
+        <div class="ip-answer" hidden aria-live="polite"></div>
       </section>
       <button class="ip-homebar" type="button" aria-label="Go home" hidden></button>
     </div></div>`;
@@ -212,7 +218,7 @@ export function mount(host, ctx) {
   dock.forEach((a) => $(".ip-dock").appendChild(tile(a, a.spot ? openSpot : null)));
   data.suggestions.forEach((q) => {
     const b = document.createElement("button"); b.type = "button"; b.textContent = q;
-    on(b, "click", () => ctx.ask(q)); $(".ip-spot-list").appendChild(b);
+    on(b, "click", () => { input.value = q; spotAsk(q); }); $(".ip-spot-list").appendChild(b);
   });
   if (!data.suggestions.length) { $(".ip-spot-list").hidden = true; $(".ip-spot-head").hidden = true; }
 
@@ -266,7 +272,27 @@ export function mount(host, ctx) {
       cleanups.push(() => clearTimeout(t));
     } else if (layer !== "lock") show("home");
   };
-  function openSpot() { show("spot"); input.value = ""; setTimeout(() => input.focus(), 50); }
+  function openSpot() {
+    show("spot"); input.value = "";
+    $(".ip-answer").hidden = true; $(".ip-spot-head").hidden = $(".ip-spot-list").hidden = !data.suggestions.length;
+    setTimeout(() => input.focus(), 50);
+  }
+  // Spotlight answers in place: the question, then the answer streaming in.
+  function spotAsk(q) {
+    q = (q || "").trim(); if (!q) return;
+    const card = $(".ip-answer");
+    $(".ip-spot-head").hidden = $(".ip-spot-list").hidden = true;
+    card.hidden = false;
+    card.innerHTML = `<div class="q">${esc(q)}</div><div class="a"><span class="wait">Thinking…</span></div>`;
+    const a = card.querySelector(".a");
+    input.blur();
+    ctx.answer(q, (html) => { a.innerHTML = html; })
+      .then((html) => { a.innerHTML = html; })
+      .catch((err) => {
+        a.innerHTML = `${esc(err.message)} <a href="#" data-handoff>Open in the résumé ›</a>`;
+        a.querySelector("[data-handoff]").addEventListener("click", (e) => { e.preventDefault(); ctx.ask(q); });
+      });
+  }
 
   on(lock, "click", (e) => { if (!e.target.closest("a")) unlock(); });
   on(homebar, "click", goHome);
@@ -277,7 +303,7 @@ export function mount(host, ctx) {
   });
   on($(".ip-search"), "click", openSpot);
   on($("[data-cancel]"), "click", () => show("home"));
-  on($(".ip-field"), "submit", (e) => { e.preventDefault(); ctx.ask(input.value); });
+  on($(".ip-field"), "submit", (e) => { e.preventDefault(); spotAsk(input.value); });
   on(spot, "click", (e) => { if (e.target === spot) show("home"); });
   on(document, "keydown", (e) => {
     if (e.key === "Escape") { if (layer === "spot") show("home"); else if (layer === "app") goHome(); }

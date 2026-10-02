@@ -139,6 +139,11 @@ a.i4-row::after, button.i4-row::after { content: "›"; color: #8e8e93; font-siz
 .i4-b.them { align-self: flex-start; background: linear-gradient(#f3f3f3, #d9d9d9); color: #000; }
 .i4-b.me { align-self: flex-end; color: #fff; background: linear-gradient(#6bb3ff, #1f7ceb); }
 .i4-b a { color: #1f5fc0; font-weight: 700; }
+.i4-b p { margin: 0 0 6px; } .i4-b p:last-child { margin: 0; } .i4-b ul { margin: 0 0 6px 16px; } .i4-b.them { user-select: text; -webkit-user-select: text; }
+.i4-siri .heard { padding: 0 20px; font-size: 13px; color: #cfd0d4; text-align: center; font-style: italic; }
+.i4-siri .resp { margin: 10px 14px 0; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.08);
+  font-size: 13.5px; line-height: 1.45; color: #f2f2f2; overflow-y: auto; flex: 1; min-height: 0; user-select: text; -webkit-user-select: text; }
+.i4-siri .resp p { margin: 0 0 7px; } .i4-siri .resp ul { margin: 0 0 7px 16px; } .i4-siri .resp a { color: #9ec5ff; }
 .i4-b .opt { display: block; color: #1f5fc0; cursor: pointer; margin-top: 4px; }
 .i4-typing { align-self: flex-start; font-size: 12px; color: #6d7a8c; }
 .i4-compose { display: flex; gap: 6px; padding: 6px; background: linear-gradient(#e4e8ee, #b8c0cc); border-top: 1px solid #8d97a6; }
@@ -242,7 +247,9 @@ export function mount(host, ctx) {
         <section class="i4-layer i4-appview" hidden aria-live="polite"></section>
         <section class="i4-layer i4-siri" hidden aria-label="Siri">
           <div class="say">What can I help you with?</div>
+          <div class="heard" hidden></div>
           <div class="sugg"></div>
+          <div class="resp" hidden aria-live="polite"></div>
           <form><input type="text" maxlength="500" autocomplete="off" placeholder="Ask about Anthony…" aria-label="Ask Siri" /></form>
           <div class="dock"><button type="button" class="i4-mic listening" aria-label="Ask">${MIC}</button></div>
         </section>
@@ -404,15 +411,25 @@ export function mount(host, ctx) {
     const q = (text || "").trim(); if (!q || busy) return;
     busy = true;
     const mine = ["me", esc(q)]; chatLog.push(mine); bubble(...mine);
-    later(() => {
-      const list = view.querySelector(".i4-msgs"); if (!list) { busy = false; return; }
-      const t = document.createElement("div"); t.className = "i4-typing"; t.textContent = "Anthony is typing…"; list.appendChild(t);
-      later(() => {
-        t.remove();
-        const reply = ["them", `Good one — that answer's better on the big screen. <a href="#" data-ask="${esc(q)}">Read it ›</a>`];
-        chatLog.push(reply); bubble(...reply); busy = false;
-      }, 1400);
-    }, 900);
+    const list = () => view.querySelector(".i4-msgs");
+    const t = document.createElement("div"); t.className = "i4-typing"; t.textContent = "Anthony is typing…";
+    later(() => { if (!entry && list()) { list().appendChild(t); list().scrollTop = list().scrollHeight; } }, 600);
+    // The reply's html lives in chatLog, so leaving and reopening Messages
+    // mid-answer shows it where it got to.
+    let entry = null, el = null;
+    const write = (html) => {
+      t.remove();
+      if (!entry) { entry = ["them", ""]; chatLog.push(entry); }
+      entry[1] = html;
+      if (list()) {
+        if (!el || !el.isConnected) el = bubble("them", html); else el.innerHTML = html;
+        list().scrollTop = list().scrollHeight;
+      }
+    };
+    ctx.answer(q, write)
+      .then(write)
+      .catch((err) => { t.remove(); write(`${esc(err.message)} <a href="#" data-ask="${esc(q)}">Open in the résumé ›</a>`); })
+      .finally(() => { busy = false; });
   }
   on(root, "click", (e) => { const a = e.target.closest("[data-ask]"); if (a) { e.preventDefault(); ctx.ask(a.dataset.ask); } });
 
@@ -427,14 +444,31 @@ export function mount(host, ctx) {
     before = layer === "lock" ? "lock" : layer;
     show("siri");
     siri.querySelector(".say").textContent = "What can I help you with?";
+    siri.querySelector(".heard").hidden = true;
+    siri.querySelector(".resp").hidden = true;
+    siri.querySelector(".sugg").hidden = !data.suggestions.length;
     const input = siri.querySelector("input"); input.value = "";
     later(() => input.focus(), 60);
   };
   const closeSiri = () => { if (layer === "siri") show(before === "app" ? "app" : before); };
+  // Siri answers on the linen: what it heard, then the answer as it streams.
   const siriAsk = (q) => {
     q = (q || "").trim(); if (!q) return;
-    siri.querySelector(".say").textContent = "Let me check on that…";
-    later(() => ctx.ask(q), ctx.reducedMotion ? 0 : 900);
+    const say = siri.querySelector(".say"), heard = siri.querySelector(".heard"), resp = siri.querySelector(".resp");
+    say.textContent = "Let me check on that…";
+    heard.textContent = "“" + q + "”"; heard.hidden = false;
+    siri.querySelector(".sugg").hidden = true;
+    resp.hidden = true; resp.innerHTML = "";
+    siri.querySelector("input").value = "";
+    siri.querySelector("input").blur();
+    const write = (html) => { say.textContent = "Here's what I found:"; resp.hidden = false; resp.innerHTML = html; };
+    ctx.answer(q, write)
+      .then(write)
+      .catch((err) => {
+        say.textContent = "Sorry, I couldn't do that.";
+        resp.hidden = false;
+        resp.innerHTML = `${esc(err.message)} <a href="#" data-ask="${esc(q)}">Open in the résumé ›</a>`;
+      });
   };
   on(siri.querySelector("form"), "submit", (e) => { e.preventDefault(); siriAsk(siri.querySelector("input").value); });
   on(siri.querySelector(".i4-mic"), "click", () => siriAsk(siri.querySelector("input").value));

@@ -32,10 +32,11 @@
           exports mount(el, ctx) returning an unmount that removes everything
           it made. Only the active device's file is downloaded.
 
-          Questions don't get answered here yet: ctx.ask() hands them to the
-          résumé's Ask box via /?ask=. The Ask client lives in index.html and a
-          second copy would drift; answering in place means moving it into a
-          shared script first.
+          Questions are answered in place: ctx.answer() streams from the same
+          shared client the résumé uses (/ask-client.js) — one copy of the
+          Turnstile, session and streaming code, not two. When Cloudflare wants
+          a click, the checkbox appears in an overlay above the phone.
+          ctx.ask() — hand the question to the résumé — remains as a fallback.
         -->
         <style>
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,6 +67,22 @@
             .caption { font-size: 0.8rem; color: rgba(255,255,255,.55); text-align: center; }
             .caption a { color: #9ec5ff; }
             .error { padding: 40px; text-align: center; }
+            /* Cloudflare sometimes wants a click. It appears over the phone,
+               the way a system prompt would. */
+            .verify {
+                position: fixed; inset: 0; z-index: 100;
+                display: grid; place-items: center;
+                background: rgba(5, 5, 12, 0.55);
+                backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+                opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            }
+            .verify.open { opacity: 1; pointer-events: auto; }
+            .verify-card {
+                background: #fff; color: #1c1c1e; border-radius: 16px; padding: 18px 18px 14px;
+                box-shadow: 0 20px 60px rgba(0,0,0,.5); text-align: center;
+                font: 500 14px Inter, system-ui, sans-serif; max-width: 340px;
+            }
+            .verify-card p { margin-bottom: 12px; }
             .error a { color: #9ec5ff; }
             /* On a real phone the page *is* the device: no frame, no chrome
                around it. Devices offer their own way to switch and leave. */
@@ -83,13 +100,19 @@
         <a class="back" href="/">← résumé</a>
         <div id="device"></div>
         <div class="switcher" id="switcher" aria-label="Device"><span>Device</span></div>
+        <div class="verify" id="verify" aria-live="polite">
+            <div class="verify-card">
+                <p>Quick check before Anthony answers</p>
+                <div id="verify-host"></div>
+            </div>
+        </div>
         <p class="caption">The résumé, as a phone · <a href="/">back to the classic résumé</a></p>
 
         <script>
             (function () {
                 // Bump when anything in phone/ changes: dynamic imports aren't
                 // reliably refetched by a hard refresh.
-                var VERSION = "2026-10-01f";
+                var VERSION = "2026-10-02a";
                 // In order of era — the switcher lists them this way.
                 var DEVICES = {
                     blackberry: { label: "BlackBerry", module: "/phone/blackberry.js" },
@@ -182,6 +205,20 @@
                     } catch (e) {}
                 }
 
+                // One Ask client for the whole page, shared by every device.
+                // Imported now so Turnstile is ready by the time anyone asks.
+                var verify = document.getElementById("verify");
+                var clientP = import("/ask-client.js?v=" + VERSION).then(function (mod) {
+                    return {
+                        mod: mod,
+                        client: mod.createAskClient({
+                            host: document.getElementById("verify-host"),
+                            onChallenge: function (visible) { verify.classList.toggle("open", visible); },
+                        }),
+                    };
+                });
+                var answering = false;
+
                 var ctx = {
                     get data() { return data; },
                     devices: DEVICES,
@@ -203,6 +240,31 @@
                         location.href = "/?ask=" + encodeURIComponent(q.slice(0, 500)) + "#ask";
                     },
                     setDevice: function (name, persist) { setDevice(name, persist !== false); },
+                    // Ask and stream the answer. onText(html) gets the answer so
+                    // far, already rendered from markdown with HTML escaped
+                    // first. Resolves with the final html; rejects with a
+                    // visitor-facing message. One question at a time.
+                    answer: function (q, onText) {
+                        q = (q || "").trim();
+                        if (!q) return Promise.reject(new Error("Ask something first."));
+                        if (answering) return Promise.reject(new Error("One question at a time."));
+                        answering = true;
+                        var c = null;
+                        return clientP
+                            .then(function (got) {
+                                c = got;
+                                return c.client.ask(q.slice(0, 500), {
+                                    onText: function (out) { onText && onText(c.mod.renderMarkdown(out)); },
+                                });
+                            })
+                            .then(function (out) { return c.mod.renderMarkdown(out); })
+                            .catch(function (err) {
+                                console.error("ask failed:", err);
+                                var m = c && c.mod.MESSAGES[err && err.kind];
+                                throw new Error(m || "This is temporarily unreachable — my side, not yours.");
+                            })
+                            .finally(function () { answering = false; verify.classList.remove("open"); });
+                    },
                     current: function () { return current; },
                 };
 
