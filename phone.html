@@ -112,7 +112,7 @@
             (function () {
                 // Bump when anything in phone/ changes: dynamic imports aren't
                 // reliably refetched by a hard refresh.
-                var VERSION = "2026-10-02a";
+                var VERSION = "2026-10-02c";
                 // In order of era — the switcher lists them this way.
                 var DEVICES = {
                     blackberry: { label: "BlackBerry", module: "/phone/blackberry.js" },
@@ -127,7 +127,7 @@
                 // each company's own apple-touch-icon or favicon, Cape's 2017
                 // icon from the Wayback Machine, and Simple Icons (CC0) on the
                 // brand colour where the site's own was too small to stay
-                // sharp. Zeebu and Rove have none that survived.
+                // sharp. Zeebu's and Rove's are originals Anthony supplied.
                 var ICONS = {
                     classdojo: { src: "/phone/icons/classdojo.png", bg: "#fff", pad: true },
                     greg: { src: "/phone/icons/greg.png" },
@@ -138,6 +138,9 @@
                     vmware: { src: "/phone/icons/vmware.png" },
                     bitheads: { src: "/phone/icons/bitheads.png", bg: "#fff", pad: true },
                     truecontext: { src: "/phone/icons/truecontext.png" },
+                    // Both supplied by Anthony — neither survived online.
+                    zeebumobile: { src: "/phone/icons/zeebumobile.png", bg: "#4b2a6b", pad: true },
+                    rovemobile: { src: "/phone/icons/rovemobile.png", bg: "#0b628c" }, // wide wordmark: no padding, it already sits on its own blue
                 };
 
                 function text(el) { return el ? el.textContent.replace(/\s+/g, " ").trim() : ""; }

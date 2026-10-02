@@ -142,8 +142,8 @@ Company icons live in `phone/icons/`, mapped by role slug in `ICONS` in
 `phone.html`; a company not in the map gets a letter tile. They're employers'
 logos used to say "worked here" — nominative use, common on résumés — not the
 device makers' interface artwork, which stays off-limits. Sources are noted
-beside the map. Zeebu and Rove have no surviving logo; if Anthony supplies
-originals, drop them in and add two lines to the map.
+beside the map. Zeebu's and Rove's are originals Anthony supplied, since
+neither survived online. Every employer now has an icon.
 
 "Phone ↗" sits in the theme row because to a visitor it is one. `noindex` and
 out of the sitemap while it's a first cut. Homage, not copies: no logos.
