@@ -72,6 +72,17 @@ always comes out Classic, and it must not add or remove content — same DOM,
 same words, every theme. Classic's OS-dark rule is scoped to
 `:root:not([data-theme])` so it can't leak under a novelty theme.
 
+### PlantVision
+
+`themes/plantvision.js` draws a camera-feed overlay over the real page:
+detection boxes, a reticle (follows the cursor; fixed at screen centre on
+touch, so scrolling moves the page under it), confidence accumulating as
+evidence per inference pass, a visible scheduler, a crop inset, a test-harness
+panel, and a species card on lock that asks the Ask box. It reads the page and
+never changes the words. The overlay must never cover the theme picker — the
+way out — so it measures the picker's bottom every frame (`--pv-safe`); don't
+reintroduce fixed `top:` values on its panels.
+
 ### Theme modules
 
 A theme can optionally have a JS module in `themes/<name>.js`, registered in

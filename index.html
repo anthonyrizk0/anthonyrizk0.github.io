@@ -45,12 +45,13 @@
                 // Bump whenever anything in themes/ changes — browsers cache
                 // those files and a hard refresh doesn't reliably refetch a
                 // dynamic import(), so a new URL is the only guarantee.
-                var VERSION = "2026-10-02a";
+                var VERSION = "2026-10-09d";
                 var NOVELTY = {
                     terminal: { module: "/themes/terminal.js" },
                     blueprint: {
                         fonts: "https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap",
                     },
+                    plantvision: { module: "/themes/plantvision.js" },
                 };
                 window.__themes = { version: VERSION, novelty: NOVELTY };
                 var THEMES = ["classic", "light", "dark"].concat(Object.keys(NOVELTY));
@@ -1628,6 +1629,33 @@
                 [data-theme="blueprint"] .btn { border-color: rgba(255,255,255,.7); color: #fff; }
                 [data-theme="blueprint"] footer::before { background: rgba(255,255,255,.5); }
             }
+
+            /* ================================================================
+               THEME: plantvision
+               The page as PlantVision's camera feed: Classic's layout on a
+               camera-dark ground with the app's green as the accent. The
+               detection, tracking and identification are all in
+               themes/plantvision.js; this is only the palette.
+               ================================================================ */
+            @media screen {
+                :root[data-theme="plantvision"] {
+                    color-scheme: dark;
+                    --bg: #07100b;
+                    --bg-surface: #0b1510;
+                    --bg-card: #0f1a14;
+                    --bg-elevated: #13211a;
+                    --text: #e2f5e8;
+                    --text-mid: #b5d4bf;
+                    --text-muted: #6f8f7a;
+                    --text-dim: #3f5a48;
+                    --blue: #5be38a;
+                    --purple: #a6e3a1;
+                    --teal: #7fd6ff;
+                    --orange: #ffcc4d;
+                    --shadow: rgba(0, 0, 0, 0.4);
+                    --sheen: rgba(255, 255, 255, 0.04);
+                }
+            }
         </style>
     </head>
     <body>
@@ -1647,6 +1675,7 @@
                 <button type="button" data-pick="classic" aria-pressed="true">Classic</button>
                 <button type="button" data-pick="terminal" aria-pressed="false">Terminal</button>
                 <button type="button" data-pick="blueprint" aria-pressed="false">Blueprint</button>
+                <button type="button" data-pick="plantvision" aria-pressed="false">PlantVision</button>
                 <!-- Not a theme structurally — its own page, built from this
                      one — but it sits with them because to a visitor it is one. -->
                 <a class="theme-link" href="/phone">Phone ↗</a>
