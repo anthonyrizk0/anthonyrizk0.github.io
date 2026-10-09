@@ -192,7 +192,9 @@ export function mount(ctx) {
     const name = raw.split(/\s[—(]/)[0];
     const key = slug(name);
     const period = text(item.querySelector(".period"));
-    const label = seen[key] ? name + " ’" + period.slice(-2) : name;
+    // Both Facebook stints are just "Facebook" here — the dates on the card
+    // tell them apart, and "Facebook ’19" read as noise in a label.
+    const label = name;
     seen[key] = true;
     add(item, label, LATIN[key] || name + " incognita", { kind: "role", key, period, title: text(item.querySelector(".role")) });
   });
@@ -255,7 +257,7 @@ export function mount(ctx) {
   });
 
   // ── Parameters — the test harness edits these live ────────────────
-  const P = { rate: touch ? 10 : 14, thresh: 0.9, per: 3, bias: true };
+  const P = { rate: 12, thresh: 0.9, per: 3, bias: true };
   const syncHarness = () => {
     harness.querySelectorAll("[data-k]").forEach((i) => { if (i.type === "checkbox") i.checked = P[i.dataset.k]; else i.value = P[i.dataset.k]; });
     harness.querySelector('[data-v="rate"]').textContent = P.rate + "/s";
@@ -289,7 +291,11 @@ export function mount(ctx) {
   // 1 − e^(−k·evidence). Motion costs evidence. Without bias correction the
   // classifier over-predicts the "common species" — here, the newest role —
   // the way community-sourced training data over-predicted common plants.
-  const K = 0.42;
+  // Tuned so a steady target locks in about 3.5s at 12 passes/s (0.9 needs
+  // ~42 passes of evidence). At 0.42 it locked in under half a second — too
+  // fast to see the thing worth seeing, which is the wrong class leading for
+  // the first second before the right one overtakes it.
+  const K = 0.055;
   let target = null, locked = null, lastTarget = null, lastPass = 0, passes = 0, passWindow = performance.now();
 
   function probsFor(c) {
@@ -297,8 +303,13 @@ export function mount(ctx) {
     // a plausible wrong one (a neighbour, or the same company's other stint)
     // takes most of the rest — and early on it can win.
     const others = roles.filter((r) => r !== c);
-    const confuse = others.find((r) => r.key && r.key === c.key) || others[(roles.indexOf(c) + 1) % Math.max(1, others.length)] || null;
-    const third = others.find((r) => r !== confuse) || null;
+    // The plausible wrong answer is a neighbouring role with a different name
+    // — never the same company's other stint, which would print "Facebook"
+    // twice in the top three.
+    const distinct = others.filter((r) => r.name !== c.name);
+    const at = Math.max(0, roles.indexOf(c));
+    const confuse = distinct.find((r) => roles.indexOf(r) > at) || distinct[0] || null;
+    const third = distinct.find((r) => r !== confuse && r.name !== (confuse && confuse.name)) || null;
     const rest = 1 - c.conf;
     const wobble = reduced ? 0 : (Math.random() - 0.5) * 0.06;
     let pWrong = clamp(rest * 0.68 + wobble, 0, 1);
