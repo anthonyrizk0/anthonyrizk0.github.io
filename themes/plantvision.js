@@ -115,6 +115,14 @@ const CSS = `
 .pv-card button { pointer-events: auto; cursor: pointer; font: 600 12px Inter, system-ui, sans-serif; border-radius: 8px; padding: 7px 11px; border: 1px solid rgba(91,227,138,.6); background: rgba(91,227,138,.15); color: #c9ffd9; }
 .pv-card button.ghost { border-color: rgba(255,255,255,.18); background: none; color: rgba(225,255,235,.7); }
 
+/* Motion sensors */
+.pv-mbtn { pointer-events: auto; cursor: pointer; font: 600 10px "JetBrains Mono", monospace; letter-spacing: 1px; color: #0a140e; background: #5be38a; border: none; border-radius: 6px; padding: 5px 9px; white-space: nowrap; }
+.pv-mbtn.off { background: rgba(0,0,0,.45); color: rgba(225,255,235,.6); border: 1px solid rgba(255,255,255,.15); }
+.pv-level { position: absolute; left: 0; top: 0; width: 150px; height: 2px; margin: -1px 0 0 -75px; will-change: transform; }
+.pv-level::before, .pv-level::after { content: ""; position: absolute; top: 0; width: 40px; height: 2px; background: rgba(230,255,238,.75); border-radius: 1px; transition: background .2s; }
+.pv-level::before { left: 0; } .pv-level::after { right: 0; }
+.pv-level.level::before, .pv-level.level::after { background: #5be38a; box-shadow: 0 0 6px rgba(91,227,138,.8); }
+
 /* Test harness */
 .pv-hbtn { pointer-events: auto; cursor: pointer; font: 600 10px "JetBrains Mono", monospace; letter-spacing: 1px; color: #c9ffd9; background: rgba(0,0,0,.45); border: 1px solid rgba(91,227,138,.45); border-radius: 6px; padding: 4px 8px; }
 .pv-harness { position: absolute; right: 12px; width: 240px; pointer-events: auto; background: rgba(6,10,8,.92); border: 1px solid rgba(91,227,138,.45); border-radius: 10px; padding: 10px 12px; font-size: 10.5px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -218,11 +226,13 @@ export function mount(ctx) {
   layer.innerHTML = `
     <div class="pv-boxes"></div>
     <div class="pv-label" hidden><div class="n"><span class="nm"></span><b class="pc"></b></div><div class="l"></div><div class="pv-probs"></div></div>
+    <div class="pv-level" hidden></div>
     <div class="pv-reticle"><div class="ring"></div></div>
     <div class="pv-hud pv-top">
       <div class="grp"><span><span class="pv-rec"></span>PLANTVISION</span><span>LIVE</span></div>
       <div class="grp cam"><span>ISO 400</span><span>1/120</span><span>ƒ/1.8</span><span>YOLOv5 → crop → MobileNet</span></div>
       <div class="grp stats"><span class="pv-rate">— passes/s</span><span class="pv-count">0 in view</span></div>
+      <button type="button" class="pv-mbtn" hidden>TILT TO AIM</button>
       <button type="button" class="pv-hbtn">TEST HARNESS</button>
     </div>
     <div class="pv-sched"><h4>INFERENCE SCHEDULER</h4><div class="rows"></div><div class="ft"><span>priority</span><span>conf</span></div></div>
@@ -286,6 +296,72 @@ export function mount(ctx) {
     on(document, "pointerleave", () => { usingPointer = false; });
   }
 
+  // ── Motion sensors (phones) ───────────────────────────────────────
+  // Tilt aims the reticle — you point the phone at a role, like the real app.
+  // The gyroscope's rotation rate feeds the "hold steady" penalty, so a
+  // genuinely steady hand identifies faster. A level line rides on the
+  // reticle, and a hard shake rescans. iOS only grants sensor access from a
+  // tap, hence the button; desktops never see it.
+  const M = { on: false, base: null, dx: 0, dy: 0, roll: 0, rot: 0, lastShake: 0 };
+  const mbtn = $(".pv-mbtn"), levelEl = $(".pv-level");
+  let guideHold = 0, guideHoldText = "";
+  const flash = (t) => { guideHold = performance.now() + 1800; guideHoldText = t; };
+  const canTilt = touch && typeof window.DeviceOrientationEvent !== "undefined";
+  if (canTilt) mbtn.hidden = false;
+  const orientAngle = () => (screen.orientation && typeof screen.orientation.angle === "number" ? screen.orientation.angle : window.orientation || 0);
+  const onOrient = (e) => {
+    if (e.beta == null || e.gamma == null) return;
+    // Map device axes onto screen axes for the current orientation.
+    const a = ((orientAngle() % 360) + 360) % 360;
+    let x, y;
+    if (a === 90) { x = e.beta; y = -e.gamma; }
+    else if (a === 270) { x = -e.beta; y = e.gamma; }
+    else { x = e.gamma; y = e.beta; }
+    if (!M.base) M.base = { x, y };
+    M.dx = clamp((x - M.base.x) * 16, -innerWidth / 2 + 30, innerWidth / 2 - 30);
+    M.dy = clamp((y - M.base.y) * 16, -innerHeight * 0.4 + 30, innerHeight * 0.5 - 70);
+    M.roll = x; // absolute side-to-side tilt: 0 is level
+  };
+  const onMotion = (e) => {
+    const rr = e.rotationRate;
+    if (rr) M.rot = M.rot * 0.8 + 0.2 * Math.hypot(rr.alpha || 0, rr.beta || 0, rr.gamma || 0);
+    const acc = e.acceleration;
+    if (acc && acc.x != null) {
+      const g = Math.hypot(acc.x, acc.y || 0, acc.z || 0);
+      const now = performance.now();
+      if (g > 17 && now - M.lastShake > 1500) { M.lastShake = now; rescan(); }
+    }
+  };
+  function rescan() {
+    cands.forEach((c) => { c.evidence = 0; c.conf = 0; });
+    card.classList.remove("on");
+    locked = null;
+    flash("↻ Rescanning…");
+  }
+  function startMotion() {
+    M.on = true; M.base = null;
+    on(window, "deviceorientation", onOrient);
+    on(window, "devicemotion", onMotion);
+    levelEl.hidden = false;
+    mbtn.textContent = "RECENTRE";
+    mbtn.classList.add("off");
+    flash("Tilt to aim · shake to rescan");
+  }
+  on(mbtn, "click", () => {
+    if (M.on) { M.base = null; flash("Recentred"); return; }
+    const D = window.DeviceOrientationEvent;
+    if (D && typeof D.requestPermission === "function") {
+      D.requestPermission()
+        .then((r) => {
+          if (r !== "granted") { mbtn.textContent = "MOTION BLOCKED"; mbtn.classList.add("off"); return; }
+          // Motion is a separate permission on iOS; ask for it in the same tap.
+          const DM = window.DeviceMotionEvent;
+          (DM && typeof DM.requestPermission === "function" ? DM.requestPermission().catch(() => "denied") : Promise.resolve("granted")).then(startMotion);
+        })
+        .catch(() => { mbtn.textContent = "MOTION BLOCKED"; mbtn.classList.add("off"); });
+    } else startMotion();
+  });
+
   // ── The model ─────────────────────────────────────────────────────
   // Evidence accumulates on whatever the classifier runs on; confidence is
   // 1 − e^(−k·evidence). Motion costs evidence. Without bias correction the
@@ -327,7 +403,7 @@ export function mount(ctx) {
       c.prio = (c === target ? 0.6 : 0) + 0.25 * (1 - c.conf) + 0.15 * recency;
     });
     const chosen = [...visible].sort((a, b) => b.prio - a.prio).slice(0, P.per);
-    const motion = clamp((speed + scrollSpeed * 0.6) / 22, 0, 1);
+    const motion = clamp((speed + scrollSpeed * 0.6 + (M.on ? M.rot / 5 : 0)) / 22, 0, 1);
     chosen.forEach((c) => {
       c.ran = now;
       const gain = c === target ? 1 : 0.18;
@@ -389,12 +465,17 @@ export function mount(ctx) {
     const dt = Math.min(64, now - lastFrame); lastFrame = now;
 
     // Reticle: eased toward the pointer, or parked in the centre on touch.
-    const tx = usingPointer ? px : W() / 2, ty = usingPointer ? py : H() * 0.45;
+    const tx = usingPointer ? px : W() / 2 + (M.on ? M.dx : 0);
+    const ty = usingPointer ? py : H() * 0.45 + (M.on ? M.dy : 0);
     const ease = reduced ? 1 : 1 - Math.pow(0.001, dt / 1000);
     rx += (tx - rx) * ease; ry += (ty - ry) * ease;
     speed = speed * 0.8 + Math.hypot(rx - lastRx, ry - lastRy) * 0.2; lastRx = rx; lastRy = ry;
     scrollSpeed = scrollSpeed * 0.8 + Math.abs(scrollY - lastScroll) * 0.2; lastScroll = scrollY;
     reticle.style.transform = `translate(${rx}px, ${ry}px)`;
+    if (M.on) {
+      levelEl.style.transform = `translate(${rx}px, ${ry}px) rotate(${-M.roll}deg)`;
+      levelEl.classList.toggle("level", Math.abs(M.roll) < 2);
+    }
     const pick = document.querySelector(".theme-picker");
     const pb = pick ? pick.getBoundingClientRect().bottom : 0;
     const safe = Math.max(10, pb + 8);
@@ -445,7 +526,7 @@ export function mount(ctx) {
     });
 
     // The target's label, colour sliding amber → green with confidence.
-    const motion = clamp((speed + scrollSpeed * 0.6) / 22, 0, 1);
+    const motion = clamp((speed + scrollSpeed * 0.6 + (M.on ? M.rot / 5 : 0)) / 22, 0, 1);
     if (target) {
       const hue = 45 + target.conf * 95;
       const col = `hsl(${hue}, 90%, 62%)`;
@@ -488,6 +569,7 @@ export function mount(ctx) {
   }
   let lastGuide = "";
   function setGuide(t, cls) {
+    if (performance.now() < guideHold) { t = guideHoldText; cls = ""; }
     const key = t + cls;
     if (key === lastGuide) return;
     lastGuide = key; guide.textContent = t; guide.className = "pv-guide" + (cls ? " " + cls : "");

@@ -83,6 +83,13 @@ never changes the words. The overlay must never cover the theme picker — the
 way out — so it measures the picker's bottom every frame (`--pv-safe`); don't
 reintroduce fixed `top:` values on its panels.
 
+On phones it can use the motion sensors, behind a TILT TO AIM button (iOS only
+grants sensor access from a tap, and asks for orientation and motion
+separately): tilt aims the reticle, gyroscope rotation feeds the steadiness
+penalty, a level line rides on the reticle, a hard shake rescans, and the
+button becomes RECENTRE. Synthetic `DeviceOrientationEvent`/`DeviceMotionEvent`
+dispatches test the logic; only a real phone tests the feel.
+
 ### Theme modules
 
 A theme can optionally have a JS module in `themes/<name>.js`, registered in
