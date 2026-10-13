@@ -123,6 +123,14 @@ const CSS = `
 .pv-level::before { left: 0; } .pv-level::after { right: 0; }
 .pv-level.level::before, .pv-level.level::after { background: #5be38a; box-shadow: 0 0 6px rgba(91,227,138,.8); }
 
+/* Edge panning: a glow on the edge the page is scrolling toward. */
+.pv-edge { position: fixed; left: 0; right: 0; height: 90px; pointer-events: none; opacity: 0; }
+.pv-edge.top { top: 0; background: linear-gradient(rgba(91,227,138,.28), transparent); }
+.pv-edge.bot { bottom: 0; background: linear-gradient(transparent, rgba(91,227,138,.28)); }
+.pv-edge::after { position: absolute; left: 50%; transform: translateX(-50%); color: #5be38a; font: 700 14px "JetBrains Mono", monospace; text-shadow: 0 0 6px #000; }
+.pv-edge.top::after { content: "▲"; top: 6px; }
+.pv-edge.bot::after { content: "▼"; bottom: 6px; }
+
 /* Test harness */
 .pv-hbtn { pointer-events: auto; cursor: pointer; font: 600 10px "JetBrains Mono", monospace; letter-spacing: 1px; color: #c9ffd9; background: rgba(0,0,0,.45); border: 1px solid rgba(91,227,138,.45); border-radius: 6px; padding: 4px 8px; }
 .pv-harness { position: absolute; right: 12px; width: 240px; pointer-events: auto; background: rgba(6,10,8,.92); border: 1px solid rgba(91,227,138,.45); border-radius: 10px; padding: 10px 12px; font-size: 10.5px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -226,6 +234,7 @@ export function mount(ctx) {
   layer.innerHTML = `
     <div class="pv-boxes"></div>
     <div class="pv-label" hidden><div class="n"><span class="nm"></span><b class="pc"></b></div><div class="l"></div><div class="pv-probs"></div></div>
+    <div class="pv-edge top"></div><div class="pv-edge bot"></div>
     <div class="pv-level" hidden></div>
     <div class="pv-reticle"><div class="ring"></div></div>
     <div class="pv-hud pv-top">
@@ -319,7 +328,9 @@ export function mount(ctx) {
     else { x = e.gamma; y = e.beta; }
     if (!M.base) M.base = { x, y };
     M.dx = clamp((x - M.base.x) * 16, -innerWidth / 2 + 30, innerWidth / 2 - 30);
-    M.dy = clamp((y - M.base.y) * 16, -innerHeight * 0.4 + 30, innerHeight * 0.5 - 70);
+    // The reticle can reach from just under the HUD to just above the guide
+    // pill; the edge bands are measured against these same limits.
+    M.dy = clamp((y - M.base.y) * 16, reach().min - innerHeight * 0.45, reach().max - innerHeight * 0.45);
     M.roll = x; // absolute side-to-side tilt: 0 is level
   };
   const onMotion = (e) => {
@@ -332,6 +343,31 @@ export function mount(ctx) {
       if (g > 17 && now - M.lastShake > 1500) { M.lastShake = now; rescan(); }
     }
   };
+  // Edge panning, tilt mode only: aim into the top or bottom band and the page
+  // scrolls that way, faster the deeper in — panning the camera. (Under a
+  // mouse it would fire constantly, so it doesn't.) Scrolling counts as
+  // motion, so confidence dips while panning and rebuilds once you settle.
+  let panCarry = 0;
+  const reach = () => ({ min: innerHeight * 0.05 + 30, max: innerHeight - 44 });
+  const edgeTop = $(".pv-edge.top"), edgeBot = $(".pv-edge.bot");
+  function edgePan(dt) {
+    const h = innerHeight, { min, max } = reach();
+    // Depth into each band, as a share of how far the reticle can actually go
+    // — so full tilt is full speed in both directions.
+    const topStart = h * 0.22, botStart = h * 0.76;
+    const dTop = clamp((topStart - ry) / (topStart - min), 0, 1);
+    const dBot = clamp((ry - botStart) / (max - botStart), 0, 1);
+    const atTop = scrollY <= 0, atBot = innerHeight + scrollY >= document.documentElement.scrollHeight - 1;
+    const up = atTop ? 0 : dTop, down = atBot ? 0 : dBot;
+    // Ease in: a gentle drift at the band's edge, ~14px/frame at full depth.
+    const v = (down * down - up * up) * 14 * (dt / 16.7);
+    panCarry += v;
+    const step = Math.trunc(panCarry);
+    if (step !== 0) { window.scrollBy({ top: step, behavior: "instant" }); panCarry -= step; }
+    edgeTop.style.opacity = String(up);
+    edgeBot.style.opacity = String(down);
+  }
+
   function rescan() {
     cands.forEach((c) => { c.evidence = 0; c.conf = 0; });
     card.classList.remove("on");
@@ -475,6 +511,7 @@ export function mount(ctx) {
     if (M.on) {
       levelEl.style.transform = `translate(${rx}px, ${ry}px) rotate(${-M.roll}deg)`;
       levelEl.classList.toggle("level", Math.abs(M.roll) < 2);
+      edgePan(dt);
     }
     const pick = document.querySelector(".theme-picker");
     const pb = pick ? pick.getBoundingClientRect().bottom : 0;
