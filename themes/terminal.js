@@ -70,7 +70,7 @@ body.term-pad { padding-bottom: 5.5rem; }
 const PAGES = {
   mcp: "/mcp",
   how: "/how-ask-works",
-  pdf: "/anthony_rizk_resume_sep2026.pdf",
+  pdf: "/anthony_rizk_resume_nov2026.pdf",
 };
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");

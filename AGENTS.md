@@ -21,7 +21,7 @@ paths (`/pv/foo.jpg`) are the safer habit.
   It's how the page becomes a clean PDF, and it's easy to break without
   noticing, because nothing renders differently on screen. If you touch layout,
   check print too. `.links` is hidden on paper by design.
-- **`anthony_rizk_resume_sep2026.pdf` is a Google Docs export**, not generated
+- **`anthony_rizk_resume_nov2026.pdf` is a Google Docs export**, not generated
   from this page. It drifts. When the résumé changes, the PDF needs
   re-exporting by hand, and it's the copy that ends up in ATS systems.
   `pdftotext -layout` is the way to diff it against the page.
