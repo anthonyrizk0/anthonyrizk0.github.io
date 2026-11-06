@@ -2239,7 +2239,11 @@
             </footer>
         </div>
 
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <!-- No Turnstile <script> here: /ask-client.js adds it after defining the
+             window.askTurnstile* callbacks the widget names. Loaded from the
+             HTML, it could win the race, render the widget with no callback to
+             call, and solve the challenge with nobody listening: "Reading the
+             corpus" until the 60s verify-timeout. -->
         <script>
             (function () {
 
